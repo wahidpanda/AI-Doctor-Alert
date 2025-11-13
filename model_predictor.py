@@ -1,116 +1,100 @@
+import os
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
-import logging
-import os
-
-logger = logging.getLogger(__name__)
+import requests
+from model_downloader import ModelDownloader
 
 class MedicalBERTPredictor:
-    def __init__(self, model_path):
-        self.model_path = model_path
-        self.tokenizer = None
+    def __init__(self, model_path=None):
+        self.model_path = model_path or "models/medical_bert_model"
         self.model = None
-        self.urgency_labels = ['Low', 'Medium', 'High']
+        self.tokenizer = None
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.load_model()
     
     def load_model(self):
-        """Load the trained BERT model and tokenizer"""
+        """Load model from downloaded path"""
         try:
             if not os.path.exists(self.model_path):
-                raise FileNotFoundError(f"Model directory not found: {self.model_path}")
+                raise FileNotFoundError(f"Model not found at {self.model_path}")
             
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                self.model_path, local_files_only=True, num_labels=3
-            )
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+            self.model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
+            self.model.to(self.device)
             self.model.eval()
-            logger.info("✅ Medical BERT model loaded successfully")
+            print("✅ Medical BERT model loaded successfully")
             
         except Exception as e:
-            logger.error(f"❌ Failed to load medical model: {e}")
-            raise
+            print(f"❌ Error loading model: {e}")
+            # Fallback to rule-based system
+            self.model = None
     
     def predict_urgency_with_confidence(self, text):
-        """Predict urgency with confidence scores"""
-        if not text or len(text.strip()) < 5:
-            return "Low", "Insufficient information", "Not Notified", 0.5
+        """Predict medical urgency with confidence score"""
+        # If model is not loaded, use rule-based fallback
+        if self.model is None:
+            return self._rule_based_prediction(text)
         
         try:
-            # Tokenize and predict
+            # Tokenize input
             inputs = self.tokenizer(
-                text, truncation=True, padding=True, max_length=512, return_tensors="pt"
+                text, 
+                return_tensors="pt", 
+                truncation=True, 
+                padding=True, 
+                max_length=512
             )
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
             
+            # Predict
             with torch.no_grad():
                 outputs = self.model(**inputs)
-                predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-                predicted_class_idx = torch.argmax(predictions, dim=1).item()
-                confidence = predictions[0][predicted_class_idx].item()
+                probabilities = torch.softmax(outputs.logits, dim=-1)
+                confidence, predicted_class = torch.max(probabilities, dim=-1)
             
-            urgency_level = self.urgency_labels[predicted_class_idx]
-            patient_status, alarm_status = self._determine_status_and_alarm(urgency_level, text, confidence)
+            # Map to urgency levels
+            urgency_levels = ["Low", "Medium", "High"]
+            urgency = urgency_levels[predicted_class.item()]
+            confidence_score = confidence.item()
             
-            return urgency_level, patient_status, alarm_status, confidence
+            # Determine patient status and alarm
+            patient_status, alarm_status = self._get_patient_status(urgency, confidence_score)
+            
+            return urgency, patient_status, alarm_status, confidence_score
             
         except Exception as e:
-            logger.error(f"Prediction failed: {e}")
-            # Fallback with medium confidence
-            urgency_level = self.keyword_detection(text)
-            patient_status, alarm_status = self._determine_status_and_alarm(urgency_level, text, 0.5)
-            return urgency_level, patient_status, alarm_status, 0.5
+            print(f"Model prediction failed, using rule-based: {e}")
+            return self._rule_based_prediction(text)
     
-    def predict_urgency(self, text):
-        """Backward compatibility"""
-        urgency, status, alarm, confidence = self.predict_urgency_with_confidence(text)
-        return urgency, status, alarm
-    
-    def _determine_status_and_alarm(self, urgency_level, text, confidence):
-        """Determine patient status and alarm"""
+    def _rule_based_prediction(self, text):
+        """Rule-based fallback prediction"""
         text_lower = text.lower()
         
-        if urgency_level == "High":
-            if any(word in text_lower for word in ['chest pain', 'heart', 'cardiac']):
-                status = f"Critical cardiac condition (confidence: {confidence:.2f})"
-            elif any(word in text_lower for word in ['breathing', 'choking', 'respiratory']):
-                status = f"Respiratory emergency (confidence: {confidence:.2f})"
-            else:
-                status = f"Critical condition (confidence: {confidence:.2f})"
-            alarm = "Notified to Dr"
-            
-        elif urgency_level == "Medium":
-            status = f"Moderate condition (confidence: {confidence:.2f})"
-            alarm = "Not Notified"
-            
+        high_keywords = ['chest pain', 'heart attack', 'stroke', 'severe', 'critical', 'bleeding', 'unconscious']
+        medium_keywords = ['fever', 'headache', 'dizziness', 'moderate', 'pain', 'vomiting']
+        
+        high_count = sum(1 for keyword in high_keywords if keyword in text_lower)
+        medium_count = sum(1 for keyword in medium_keywords if keyword in text_lower)
+        
+        if high_count > 0:
+            urgency = "High"
+            confidence = 0.85
+        elif medium_count > 0:
+            urgency = "Medium" 
+            confidence = 0.75
         else:
-            status = f"Stable condition (confidence: {confidence:.2f})"
-            alarm = "Not Notified"
+            urgency = "Low"
+            confidence = 0.65
         
-        return status, alarm
+        patient_status, alarm_status = self._get_patient_status(urgency, confidence)
+        return urgency, patient_status, alarm_status, confidence
     
-    def keyword_detection(self, text):
-        """Keyword-based urgency detection"""
-        if not text:
-            return "Low"
-            
-        text_lower = text.lower()
-        
-        high_urgency_keywords = [
-            'chest pain', 'heart attack', 'stroke', 'difficulty breathing',
-            'unconscious', 'severe bleeding', 'choking', 'cardiac arrest'
-        ]
-        
-        medium_urgency_keywords = [
-            'fever', 'headache', 'vomiting', 'abdominal pain', 'dizziness',
-            'infection', 'pain', 'fracture'
-        ]
-        
-        for keyword in high_urgency_keywords:
-            if keyword in text_lower:
-                return "High"
-        
-        for keyword in medium_urgency_keywords:
-            if keyword in text_lower:
-                return "Medium"
-        
-        return "Low"
+    def _get_patient_status(self, urgency, confidence):
+        """Determine patient status and alarm based on urgency"""
+        if urgency == "High":
+            return "Critical", "Notified to Dr"
+        elif urgency == "Medium":
+            return "Stable", "Monitoring"
+        else:
+            return "Good", "Routine"
