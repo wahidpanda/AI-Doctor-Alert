@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  medical-voice-pipeline:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: medical-voice-pipeline
+    working_dir: /app/phase1_data_processing
+    volumes:
+      - ./phase1_data_processing/data:/app/phase1_data_processing/data
+      - ./phase1_data_processing/outputs:/app/phase1_data_processing/outputs
+      - ./phase1_data_processing/logs:/app/phase1_data_processing/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME:-}
+      - KAGGLE_KEY=${KAGGLE_KEY:-}
+    restart: unless-stopped
+
+  # Optional: Jupyter lab for data analysis
+  jupyter:
+    image: jupyter/datascience-notebook:latest
+    container_name: medical-voice-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./phase1_data_processing:/home/jovyan/work
+    working_dir: /home/jovyan/work
+    environment:
+      - JUPYTER_TOKEN=medical123
+    restart: unless-stopped
+    depends_on:
+      - medical-voice-pipeline
+
+  # Optional: Streamlit dashboard for results
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: medical-voice-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./phase1_data_processing/outputs:/app/outputs
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    restart: unless-stopped
+    depends_on:
+      - medical-voice-pipeline

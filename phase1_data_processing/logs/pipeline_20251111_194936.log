@@ -1,0 +1,8 @@
+2025-11-11 19:49:36,117 - src.audio_transcriber - INFO - Loading Whisper model (base)...
+2025-11-11 19:49:38,211 - main - INFO - Starting Medical Audio Data Processing Pipeline
+2025-11-11 19:49:38,212 - main - INFO - ============================================================
+2025-11-11 19:49:38,213 - main - INFO - STEP 0: Dataset Download
+2025-11-11 19:49:38,218 - main - INFO - Downloading dataset from Kaggle...
+2025-11-11 19:49:38,223 - src.kaggle_downloader - INFO - Downloading dataset: islamwahid/audio-data
+2025-11-11 19:50:16,765 - src.kaggle_downloader - ERROR - Error downloading dataset: HTTPSConnectionPool(host='www.kaggle.com', port=443): Max retries exceeded with url: /api/v1/datasets/view/islamwahid/audio-data (Caused by SSLError(SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:997)')))
+2025-11-11 19:50:16,767 - main - ERROR - Failed to download dataset. Exiting pipeline.

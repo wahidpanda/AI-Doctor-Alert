@@ -1,0 +1,193 @@
+2025-11-11 19:54:46,262 - src.audio_transcriber - INFO - Loading Whisper model (base)...
+2025-11-11 19:54:47,908 - main - INFO - Starting Medical Audio Data Processing Pipeline
+2025-11-11 19:54:47,909 - main - INFO - ============================================================
+2025-11-11 19:54:47,909 - main - INFO - STEP 0: Dataset Download
+2025-11-11 19:54:47,910 - main - INFO - Downloading dataset from Kaggle...
+2025-11-11 19:54:47,910 - src.kaggle_downloader - INFO - Attempting to download dataset: islamwahid/audio-data
+2025-11-11 19:54:47,911 - src.kaggle_downloader - INFO - Method 1: Trying kagglehub...
+2025-11-11 19:55:18,825 - src.kaggle_downloader - INFO - Organizing downloaded files...
+2025-11-11 19:55:19,406 - src.kaggle_downloader - INFO - Organized 30 audio files to d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio
+2025-11-11 19:55:19,410 - main - INFO - 
+STEP 1: Data Collection
+2025-11-11 19:55:19,410 - src.audio_collector - INFO - Discovering audio files...
+2025-11-11 19:55:19,413 - src.audio_collector - INFO - Found 30 audio files and 0 placeholder files
+2025-11-11 19:55:19,413 - src.audio_collector - INFO - Validating dataset...
+2025-11-11 19:55:19,416 - src.audio_collector - INFO - Accessible files: 30 audio, 0 placeholder
+2025-11-11 19:55:19,417 - main - INFO - Dataset Summary: {
+  "total_files": 30,
+  "file_types": {
+    "audio": 30,
+    "placeholder": 0
+  },
+  "specialty_distribution": {
+    "Cardiology": 5,
+    "Dermatology": 1,
+    "Gastroenterology": 6,
+    "General Medicine": 1,
+    "Musculoskeletal": 10,
+    "Respiratory": 7
+  },
+  "file_formats": [
+    ".mp3"
+  ]
+}
+2025-11-11 19:55:19,419 - main - INFO - 
+STEP 2: Audio Preprocessing
+2025-11-11 19:55:19,420 - src.audio_preprocessor - INFO - [1/30] Processing CAR0001.mp3
+2025-11-11 19:55:19,420 - src.audio_preprocessor - INFO - Preprocessing: CAR0001.mp3
+2025-11-11 19:55:39,715 - src.audio_preprocessor - INFO - [2/30] Processing CAR0002.mp3
+2025-11-11 19:55:39,717 - src.audio_preprocessor - INFO - Preprocessing: CAR0002.mp3
+2025-11-11 19:55:44,539 - src.audio_preprocessor - INFO - [3/30] Processing CAR0003.mp3
+2025-11-11 19:55:44,540 - src.audio_preprocessor - INFO - Preprocessing: CAR0003.mp3
+2025-11-11 19:55:50,984 - src.audio_preprocessor - INFO - [4/30] Processing CAR0004.mp3
+2025-11-11 19:55:50,985 - src.audio_preprocessor - INFO - Preprocessing: CAR0004.mp3
+2025-11-11 19:55:55,251 - src.audio_preprocessor - INFO - [5/30] Processing CAR0005.mp3
+2025-11-11 19:55:55,254 - src.audio_preprocessor - INFO - Preprocessing: CAR0005.mp3
+2025-11-11 19:56:01,776 - src.audio_preprocessor - INFO - [6/30] Processing DER0001.mp3
+2025-11-11 19:56:01,776 - src.audio_preprocessor - INFO - Preprocessing: DER0001.mp3
+2025-11-11 19:56:09,850 - src.audio_preprocessor - INFO - [7/30] Processing GAS0001.mp3
+2025-11-11 19:56:09,850 - src.audio_preprocessor - INFO - Preprocessing: GAS0001.mp3
+2025-11-11 19:56:15,685 - src.audio_preprocessor - INFO - [8/30] Processing GAS0002.mp3
+2025-11-11 19:56:15,687 - src.audio_preprocessor - INFO - Preprocessing: GAS0002.mp3
+2025-11-11 19:56:22,182 - src.audio_preprocessor - INFO - [9/30] Processing GAS0003.mp3
+2025-11-11 19:56:22,182 - src.audio_preprocessor - INFO - Preprocessing: GAS0003.mp3
+2025-11-11 19:56:29,054 - src.audio_preprocessor - INFO - [10/30] Processing GAS0004.mp3
+2025-11-11 19:56:29,055 - src.audio_preprocessor - INFO - Preprocessing: GAS0004.mp3
+2025-11-11 19:56:37,630 - src.audio_preprocessor - INFO - [11/30] Processing GAS0005.mp3
+2025-11-11 19:56:37,632 - src.audio_preprocessor - INFO - Preprocessing: GAS0005.mp3
+2025-11-11 19:56:50,878 - src.audio_preprocessor - INFO - [12/30] Processing GAS0007.mp3
+2025-11-11 19:56:50,878 - src.audio_preprocessor - INFO - Preprocessing: GAS0007.mp3
+2025-11-11 19:57:03,200 - src.audio_preprocessor - INFO - [13/30] Processing GEN0001.mp3
+2025-11-11 19:57:03,200 - src.audio_preprocessor - INFO - Preprocessing: GEN0001.mp3
+2025-11-11 19:57:11,420 - src.audio_preprocessor - INFO - [14/30] Processing MSK0001.mp3
+2025-11-11 19:57:11,429 - src.audio_preprocessor - INFO - Preprocessing: MSK0001.mp3
+2025-11-11 19:57:23,054 - src.audio_preprocessor - INFO - [15/30] Processing MSK0003.mp3
+2025-11-11 19:57:23,060 - src.audio_preprocessor - INFO - Preprocessing: MSK0003.mp3
+2025-11-11 19:57:42,847 - src.audio_preprocessor - INFO - [16/30] Processing MSK0004.mp3
+2025-11-11 19:57:42,848 - src.audio_preprocessor - INFO - Preprocessing: MSK0004.mp3
+2025-11-11 19:57:51,019 - src.audio_preprocessor - INFO - [17/30] Processing MSK0005.mp3
+2025-11-11 19:57:51,019 - src.audio_preprocessor - INFO - Preprocessing: MSK0005.mp3
+2025-11-11 19:58:00,333 - src.audio_preprocessor - INFO - [18/30] Processing MSK0006.mp3
+2025-11-11 19:58:00,334 - src.audio_preprocessor - INFO - Preprocessing: MSK0006.mp3
+2025-11-11 19:58:11,175 - src.audio_preprocessor - INFO - [19/30] Processing MSK0007.mp3
+2025-11-11 19:58:11,175 - src.audio_preprocessor - INFO - Preprocessing: MSK0007.mp3
+2025-11-11 19:58:23,388 - src.audio_preprocessor - INFO - [20/30] Processing MSK0008.mp3
+2025-11-11 19:58:23,389 - src.audio_preprocessor - INFO - Preprocessing: MSK0008.mp3
+2025-11-11 19:58:35,463 - src.audio_preprocessor - INFO - [21/30] Processing MSK0009.mp3
+2025-11-11 19:58:35,464 - src.audio_preprocessor - INFO - Preprocessing: MSK0009.mp3
+2025-11-11 19:58:50,336 - src.audio_preprocessor - INFO - [22/30] Processing MSK0010.mp3
+2025-11-11 19:58:50,337 - src.audio_preprocessor - INFO - Preprocessing: MSK0010.mp3
+2025-11-11 19:59:01,365 - src.audio_preprocessor - INFO - [23/30] Processing MSK0011.mp3
+2025-11-11 19:59:01,365 - src.audio_preprocessor - INFO - Preprocessing: MSK0011.mp3
+2025-11-11 19:59:10,460 - src.audio_preprocessor - INFO - [24/30] Processing RES0001.mp3
+2025-11-11 19:59:10,461 - src.audio_preprocessor - INFO - Preprocessing: RES0001.mp3
+2025-11-11 19:59:19,683 - src.audio_preprocessor - INFO - [25/30] Processing RES0002.mp3
+2025-11-11 19:59:19,683 - src.audio_preprocessor - INFO - Preprocessing: RES0002.mp3
+2025-11-11 19:59:27,368 - src.audio_preprocessor - INFO - [26/30] Processing RES0003.mp3
+2025-11-11 19:59:27,369 - src.audio_preprocessor - INFO - Preprocessing: RES0003.mp3
+2025-11-11 19:59:46,083 - src.audio_preprocessor - INFO - [27/30] Processing RES0004.mp3
+2025-11-11 19:59:46,085 - src.audio_preprocessor - INFO - Preprocessing: RES0004.mp3
+2025-11-11 20:00:01,855 - src.audio_preprocessor - INFO - [28/30] Processing RES0005.mp3
+2025-11-11 20:00:01,856 - src.audio_preprocessor - INFO - Preprocessing: RES0005.mp3
+2025-11-11 20:00:11,724 - src.audio_preprocessor - INFO - [29/30] Processing RES0006.mp3
+2025-11-11 20:00:11,724 - src.audio_preprocessor - INFO - Preprocessing: RES0006.mp3
+2025-11-11 20:00:21,244 - src.audio_preprocessor - INFO - [30/30] Processing RES0007.mp3
+2025-11-11 20:00:21,245 - src.audio_preprocessor - INFO - Preprocessing: RES0007.mp3
+2025-11-11 20:00:41,003 - main - INFO - 
+STEP 3: Audio Transcription
+2025-11-11 20:00:41,014 - src.audio_transcriber - INFO - [1/30] Processing CAR0001.mp3
+2025-11-11 20:00:41,018 - src.audio_transcriber - INFO - Transcribing with Whisper: CAR0001.mp3
+2025-11-11 20:00:41,135 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\CAR0001.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,137 - src.audio_transcriber - INFO - [2/30] Processing CAR0002.mp3
+2025-11-11 20:00:41,137 - src.audio_transcriber - INFO - Transcribing with Whisper: CAR0002.mp3
+2025-11-11 20:00:41,161 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\CAR0002.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,161 - src.audio_transcriber - INFO - [3/30] Processing CAR0003.mp3
+2025-11-11 20:00:41,162 - src.audio_transcriber - INFO - Transcribing with Whisper: CAR0003.mp3
+2025-11-11 20:00:41,181 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\CAR0003.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,183 - src.audio_transcriber - INFO - [4/30] Processing CAR0004.mp3
+2025-11-11 20:00:41,183 - src.audio_transcriber - INFO - Transcribing with Whisper: CAR0004.mp3
+2025-11-11 20:00:41,209 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\CAR0004.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,209 - src.audio_transcriber - INFO - [5/30] Processing CAR0005.mp3
+2025-11-11 20:00:41,209 - src.audio_transcriber - INFO - Transcribing with Whisper: CAR0005.mp3
+2025-11-11 20:00:41,235 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\CAR0005.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,236 - src.audio_transcriber - INFO - [6/30] Processing DER0001.mp3
+2025-11-11 20:00:41,237 - src.audio_transcriber - INFO - Transcribing with Whisper: DER0001.mp3
+2025-11-11 20:00:41,258 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\DER0001.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,258 - src.audio_transcriber - INFO - [7/30] Processing GAS0001.mp3
+2025-11-11 20:00:41,259 - src.audio_transcriber - INFO - Transcribing with Whisper: GAS0001.mp3
+2025-11-11 20:00:41,284 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GAS0001.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,284 - src.audio_transcriber - INFO - [8/30] Processing GAS0002.mp3
+2025-11-11 20:00:41,284 - src.audio_transcriber - INFO - Transcribing with Whisper: GAS0002.mp3
+2025-11-11 20:00:41,306 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GAS0002.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,306 - src.audio_transcriber - INFO - [9/30] Processing GAS0003.mp3
+2025-11-11 20:00:41,306 - src.audio_transcriber - INFO - Transcribing with Whisper: GAS0003.mp3
+2025-11-11 20:00:41,329 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GAS0003.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,330 - src.audio_transcriber - INFO - [10/30] Processing GAS0004.mp3
+2025-11-11 20:00:41,330 - src.audio_transcriber - INFO - Transcribing with Whisper: GAS0004.mp3
+2025-11-11 20:00:41,354 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GAS0004.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,355 - src.audio_transcriber - INFO - [11/30] Processing GAS0005.mp3
+2025-11-11 20:00:41,355 - src.audio_transcriber - INFO - Transcribing with Whisper: GAS0005.mp3
+2025-11-11 20:00:41,378 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GAS0005.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,379 - src.audio_transcriber - INFO - [12/30] Processing GAS0007.mp3
+2025-11-11 20:00:41,380 - src.audio_transcriber - INFO - Transcribing with Whisper: GAS0007.mp3
+2025-11-11 20:00:41,401 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GAS0007.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,401 - src.audio_transcriber - INFO - [13/30] Processing GEN0001.mp3
+2025-11-11 20:00:41,402 - src.audio_transcriber - INFO - Transcribing with Whisper: GEN0001.mp3
+2025-11-11 20:00:41,426 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\GEN0001.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,427 - src.audio_transcriber - INFO - [14/30] Processing MSK0001.mp3
+2025-11-11 20:00:41,427 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0001.mp3
+2025-11-11 20:00:41,447 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0001.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,448 - src.audio_transcriber - INFO - [15/30] Processing MSK0003.mp3
+2025-11-11 20:00:41,448 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0003.mp3
+2025-11-11 20:00:41,468 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0003.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,468 - src.audio_transcriber - INFO - [16/30] Processing MSK0004.mp3
+2025-11-11 20:00:41,469 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0004.mp3
+2025-11-11 20:00:41,489 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0004.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,490 - src.audio_transcriber - INFO - [17/30] Processing MSK0005.mp3
+2025-11-11 20:00:41,490 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0005.mp3
+2025-11-11 20:00:41,514 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0005.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,515 - src.audio_transcriber - INFO - [18/30] Processing MSK0006.mp3
+2025-11-11 20:00:41,515 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0006.mp3
+2025-11-11 20:00:41,535 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0006.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,536 - src.audio_transcriber - INFO - [19/30] Processing MSK0007.mp3
+2025-11-11 20:00:41,536 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0007.mp3
+2025-11-11 20:00:41,562 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0007.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,562 - src.audio_transcriber - INFO - [20/30] Processing MSK0008.mp3
+2025-11-11 20:00:41,563 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0008.mp3
+2025-11-11 20:00:41,587 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0008.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,588 - src.audio_transcriber - INFO - [21/30] Processing MSK0009.mp3
+2025-11-11 20:00:41,588 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0009.mp3
+2025-11-11 20:00:41,616 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0009.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,617 - src.audio_transcriber - INFO - [22/30] Processing MSK0010.mp3
+2025-11-11 20:00:41,617 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0010.mp3
+2025-11-11 20:00:41,639 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0010.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,641 - src.audio_transcriber - INFO - [23/30] Processing MSK0011.mp3
+2025-11-11 20:00:41,641 - src.audio_transcriber - INFO - Transcribing with Whisper: MSK0011.mp3
+2025-11-11 20:00:41,664 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\MSK0011.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,664 - src.audio_transcriber - INFO - [24/30] Processing RES0001.mp3
+2025-11-11 20:00:41,666 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0001.mp3
+2025-11-11 20:00:41,698 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0001.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,699 - src.audio_transcriber - INFO - [25/30] Processing RES0002.mp3
+2025-11-11 20:00:41,700 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0002.mp3
+2025-11-11 20:00:41,734 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0002.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,735 - src.audio_transcriber - INFO - [26/30] Processing RES0003.mp3
+2025-11-11 20:00:41,735 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0003.mp3
+2025-11-11 20:00:41,755 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0003.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,756 - src.audio_transcriber - INFO - [27/30] Processing RES0004.mp3
+2025-11-11 20:00:41,756 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0004.mp3
+2025-11-11 20:00:41,778 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0004.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,779 - src.audio_transcriber - INFO - [28/30] Processing RES0005.mp3
+2025-11-11 20:00:41,779 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0005.mp3
+2025-11-11 20:00:41,800 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0005.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,800 - src.audio_transcriber - INFO - [29/30] Processing RES0006.mp3
+2025-11-11 20:00:41,801 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0006.mp3
+2025-11-11 20:00:41,831 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0006.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,832 - src.audio_transcriber - INFO - [30/30] Processing RES0007.mp3
+2025-11-11 20:00:41,833 - src.audio_transcriber - INFO - Transcribing with Whisper: RES0007.mp3
+2025-11-11 20:00:41,863 - src.audio_transcriber - ERROR - Error transcribing d:\Project\Assesment AI Task\phase1_data_processing\data\raw_audio\RES0007.mp3: [WinError 2] The system cannot find the file specified
+2025-11-11 20:00:41,869 - main - INFO - 
+STEP 4: Saving Metadata
+2025-11-11 20:00:42,109 - main - INFO - 
+STEP 5: Data Analysis
+2025-11-11 20:00:42,113 - src.data_analyzer - INFO - Loaded 0 transcripts
+2025-11-11 20:00:42,115 - main - ERROR - Pipeline execution failed: 'transcription_confidence'

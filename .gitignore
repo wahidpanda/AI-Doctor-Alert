@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+
+# Models (we won’t push these)
+models/
+*.safetensors
+*.bin
+*.pt
+
+# System
+.DS_Store
+Thumbs.db

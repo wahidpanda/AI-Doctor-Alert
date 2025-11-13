@@ -1,0 +1,21 @@
+{
+  "total_examples": 30,
+  "urgency_distribution": {
+    "high": 25,
+    "medium": 5
+  },
+  "specialty_distribution": {
+    "Musculoskeletal": 16,
+    "Gastroenterology": 4,
+    "Cardiology": 5,
+    "Respiratory": 5
+  },
+  "original_specialty_distribution": {
+    "Cardiology": 5,
+    "Musculoskeletal": 10,
+    "Gastroenterology": 6,
+    "Dermatology": 1,
+    "Respiratory": 7,
+    "General Medicine": 1
+  }
+}

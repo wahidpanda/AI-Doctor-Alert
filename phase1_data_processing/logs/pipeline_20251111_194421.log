@@ -1,0 +1,7 @@
+2025-11-11 19:44:21,958 - src.audio_transcriber - INFO - Loading Whisper model (base)...
+2025-11-11 19:44:25,731 - main - INFO - Starting Medical Audio Data Processing Pipeline
+2025-11-11 19:44:25,732 - main - INFO - ============================================================
+2025-11-11 19:44:25,733 - main - INFO - STEP 1: Data Collection
+2025-11-11 19:44:25,734 - src.audio_collector - INFO - Discovering audio files...
+2025-11-11 19:44:25,746 - src.audio_collector - INFO - Found 0 audio files
+2025-11-11 19:44:25,747 - main - ERROR - No audio files found. Exiting pipeline.

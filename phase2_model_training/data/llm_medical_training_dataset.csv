@@ -1,0 +1,31 @@
+text,specialty,urgency,original_filename,original_specialty
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,CAR0001.mp3,Cardiology
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,MSK0005.mp3,Musculoskeletal
+Patient reporting pain symptoms with concerning symptoms,Gastroenterology,medium,GAS0004.mp3,Gastroenterology
+Patient reporting pain symptoms for 12 hours with emergency symptoms,Cardiology,high,DER0001.mp3,Dermatology
+Patient reporting pain symptoms with emergency symptoms,Musculoskeletal,high,MSK0004.mp3,Musculoskeletal
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,MSK0010.mp3,Musculoskeletal
+Patient reporting pain symptoms with concerning symptoms,Musculoskeletal,medium,GAS0007.mp3,Gastroenterology
+Patient experiencing chest pain with emergency symptoms,Respiratory,high,RES0006.mp3,Respiratory
+Patient with fever and persistent cough with emergency symptoms,Musculoskeletal,high,MSK0001.mp3,Musculoskeletal
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,MSK0006.mp3,Musculoskeletal
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,MSK0009.mp3,Musculoskeletal
+Patient reporting pain symptoms with emergency symptoms,Musculoskeletal,high,GAS0002.mp3,Gastroenterology
+Patient with fever and persistent cough with emergency symptoms,Cardiology,high,CAR0004.mp3,Cardiology
+Patient experiencing chest pain with emergency symptoms,Respiratory,high,RES0005.mp3,Respiratory
+Patient reporting pain symptoms with emergency symptoms,Musculoskeletal,high,MSK0003.mp3,Musculoskeletal
+Patient reporting pain symptoms with emergency symptoms,Musculoskeletal,high,GAS0003.mp3,Gastroenterology
+Patient reporting pain symptoms with emergency symptoms,Musculoskeletal,high,MSK0011.mp3,Musculoskeletal
+Patient with fever and persistent cough with emergency symptoms,Respiratory,high,RES0007.mp3,Respiratory
+Patient with fever and persistent cough with concerning symptoms,Respiratory,medium,RES0002.mp3,Respiratory
+Patient with fever and persistent cough with concerning symptoms,Gastroenterology,medium,RES0004.mp3,Respiratory
+Patient experiencing chest pain with emergency symptoms,Cardiology,high,CAR0003.mp3,Cardiology
+Patient experiencing chest pain with emergency symptoms,Cardiology,high,CAR0002.mp3,Cardiology
+Patient with fever and persistent cough for 38 weeks with emergency symptoms,Respiratory,high,RES0003.mp3,Respiratory
+Patient reporting pain symptoms with emergency symptoms,Musculoskeletal,high,GEN0001.mp3,General Medicine
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,MSK0007.mp3,Musculoskeletal
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,CAR0005.mp3,Cardiology
+Patient experiencing chest pain with emergency symptoms,Cardiology,high,RES0001.mp3,Respiratory
+Patient experiencing chest pain with concerning symptoms,Gastroenterology,medium,GAS0001.mp3,Gastroenterology
+Patient experiencing chest pain for 39 weeks with emergency symptoms,Gastroenterology,high,GAS0005.mp3,Gastroenterology
+Patient experiencing chest pain with emergency symptoms,Musculoskeletal,high,MSK0008.mp3,Musculoskeletal
