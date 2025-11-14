@@ -10,7 +10,7 @@ numpy
 scikit-learn
 spacy
 soundfile
-sounddevice
+sounddevice==0.4.6
 scipy
 matplotlib
 seaborn
@@ -19,4 +19,4 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
-pyaudio
+PyAudio
