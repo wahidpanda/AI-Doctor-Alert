@@ -7,7 +7,7 @@ import tempfile
 import os
 import logging
 import atexit
-from pydub import AudioSegment
+import subprocess
 import streamlit as st
 
 # Set up logging
@@ -18,7 +18,16 @@ logger = logging.getLogger(__name__)
 import warnings
 warnings.filterwarnings("ignore")
 
-# Try to import resampy, fallback to scipy if not available
+# Try to import pydub, but continue without it if not available
+try:
+    from pydub import AudioSegment
+    HAS_PYDUB = True
+    logger.info("pydub available for audio conversion")
+except ImportError:
+    HAS_PYDUB = False
+    logger.warning("pydub not available, using alternative methods")
+
+# Try to import resampy
 try:
     import resampy
     HAS_RESAMPY = True
@@ -36,8 +45,8 @@ class AudioProcessor:
         
         # Supported audio formats
         self.supported_formats = {
-            '.wav', '.mp3', '.m4a', '.flac', '.ogg', '.aac', '.wma', 
-            '.aiff', '.au', '.raw', '.amr', '.3gp', '.mp4', '.webm'
+            '.wav', '.mp3', '.m4a', '.flac', '.ogg', '.aac', 
+            '.mp4', '.webm', '.3gp'
         }
         logger.info("AudioProcessor initialized with multi-format support")
     
@@ -68,7 +77,6 @@ class AudioProcessor:
                 return True
         except Exception as e:
             logger.warning(f"Could not delete {file_path}: {e}")
-            # Don't remove from temp_files list so we can try again later
             return False
         return False
     
@@ -83,10 +91,45 @@ class AudioProcessor:
         
         return file_ext in self.supported_formats
     
-    def convert_to_wav(self, input_path, output_path):
-        """Convert any audio format to WAV using pydub"""
+    def convert_to_wav_using_librosa(self, input_path, output_path):
+        """Convert audio to WAV using librosa (works for most formats)"""
         try:
-            logger.info(f"Converting {input_path} to WAV format")
+            logger.info(f"Converting {input_path} to WAV using librosa")
+            
+            # Load audio with librosa - it handles many formats natively
+            audio_data, sr = librosa.load(input_path, sr=None, mono=True)
+            
+            # Resample to 16kHz if needed
+            if sr != self.target_sample_rate:
+                if HAS_RESAMPY:
+                    audio_data = resampy.resample(audio_data, sr, self.target_sample_rate)
+                else:
+                    num_samples = int(len(audio_data) * self.target_sample_rate / sr)
+                    audio_data = signal.resample(audio_data, num_samples)
+            
+            # Save as WAV
+            audio_data_int16 = np.int16(audio_data * 32767)
+            
+            with wave.open(output_path, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(self.target_sample_rate)
+                wf.writeframes(audio_data_int16.tobytes())
+            
+            logger.info(f"✅ Successfully converted to WAV: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"Librosa conversion failed: {e}")
+            raise Exception(f"Could not process audio file with librosa: {str(e)}")
+    
+    def convert_to_wav_using_pydub(self, input_path, output_path):
+        """Convert audio to WAV using pydub (if available)"""
+        if not HAS_PYDUB:
+            raise Exception("pydub not available for audio conversion")
+        
+        try:
+            logger.info(f"Converting {input_path} to WAV using pydub")
             
             # Load audio file with pydub
             audio = AudioSegment.from_file(input_path)
@@ -98,12 +141,29 @@ class AudioProcessor:
             # Export as WAV
             audio.export(output_path, format="wav")
             
-            logger.info(f"✅ Successfully converted to WAV: {output_path}")
+            logger.info(f"✅ Successfully converted to WAV with pydub: {output_path}")
             return output_path
             
         except Exception as e:
-            logger.error(f"Audio conversion failed for {input_path}: {e}")
-            raise Exception(f"Could not process audio file: {str(e)}")
+            logger.error(f"Pydub conversion failed: {e}")
+            raise Exception(f"Could not process audio file with pydub: {str(e)}")
+    
+    def convert_to_wav(self, input_path, output_path):
+        """Convert any audio format to WAV using best available method"""
+        try:
+            # Try librosa first (handles most formats)
+            return self.convert_to_wav_using_librosa(input_path, output_path)
+        except Exception as e1:
+            logger.warning(f"Librosa conversion failed, trying pydub: {e1}")
+            try:
+                # Fallback to pydub if available
+                if HAS_PYDUB:
+                    return self.convert_to_wav_using_pydub(input_path, output_path)
+                else:
+                    raise Exception("No audio conversion method available")
+            except Exception as e2:
+                logger.error(f"All conversion methods failed: {e2}")
+                raise Exception(f"Could not convert audio file. Please try WAV or MP3 format.")
     
     def ensure_minimum_length(self, audio_data, sample_rate, min_duration=1.0):
         """Ensure audio meets minimum length requirement for Whisper"""
@@ -252,24 +312,6 @@ class AudioProcessor:
         except Exception as e:
             logger.error(f"Error loading audio file {file_path}: {e}")
             raise Exception(f"Error loading audio file: {e}")
-    
-    def convert_audio_to_16khz(self, input_path, output_path):
-        """Convert any audio file to 16kHz WAV format"""
-        try:
-            logger.info(f"Converting {input_path} to 16kHz WAV: {output_path}")
-            
-            # Load and preprocess audio to 16kHz
-            audio_data, sr = self.load_and_preprocess_audio(input_path)
-            
-            # Save as 16kHz WAV
-            self.save_audio_file(audio_data, output_path)
-            
-            logger.info(f"✅ Audio converted to 16kHz: {output_path}")
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Audio conversion failed: {e}")
-            raise Exception(f"Audio conversion failed: {e}")
 
 
 class WhisperTranscriber:
@@ -317,7 +359,8 @@ class WhisperTranscriber:
             
             # Check if format is supported
             if not self.audio_processor.is_supported_format(audio_file_path):
-                raise Exception(f"Unsupported audio format. Supported formats: {', '.join(self.audio_processor.supported_formats)}")
+                supported = ', '.join(self.audio_processor.supported_formats)
+                raise Exception(f"Unsupported audio format. Supported: {supported}")
             
             # Load and preprocess audio to 16kHz
             audio_data, sample_rate = self.audio_processor.load_and_preprocess_audio(audio_file_path)
@@ -394,8 +437,9 @@ class WhisperTranscriber:
             
             # Check if format is supported
             if not self.audio_processor.is_supported_format(uploaded_file):
-                supported_formats = ', '.join(self.audio_processor.supported_formats)
-                raise Exception(f"Unsupported audio format '{os.path.splitext(uploaded_file.name)[1]}'. Supported formats: {supported_formats}")
+                supported = ', '.join(self.audio_processor.supported_formats)
+                file_ext = os.path.splitext(uploaded_file.name)[1]
+                raise Exception(f"Unsupported audio format '{file_ext}'. Supported: {supported}")
             
             # Create temporary input file
             file_extension = os.path.splitext(uploaded_file.name)[1].lower()
@@ -427,9 +471,10 @@ def get_audio_info(file_path):
         
         # Check if format is supported
         if not processor.is_supported_format(file_path):
+            supported = ', '.join(processor.supported_formats)
             return {
                 'valid': False,
-                'message': f"Unsupported audio format. Supported: {', '.join(processor.supported_formats)}"
+                'message': f"Unsupported audio format. Supported: {supported}"
             }
         
         audio_data, sample_rate = processor.load_and_preprocess_audio(file_path)
