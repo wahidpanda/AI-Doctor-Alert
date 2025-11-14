@@ -36,7 +36,8 @@
 
 ## 🔧 System Architecture
 
-flowchart TD
+```mermaid
+graph TB
     A[Audio Input] --> B[Data Processing Pipeline]
     B --> C[Speech Transcription]
     C --> D[Medical BERT Analysis]
@@ -47,6 +48,7 @@ flowchart TD
     F --> H[Doctor Notification]
     G --> I[Web Dashboard]
     H --> I
+```
 
 
 ### 📊 Methodology
