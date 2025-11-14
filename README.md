@@ -414,160 +414,55 @@ python-dotenv>=1.0.0
 # Model Classification Performance
 
 ```
-<table>
-  <thead>
-    <tr>
-      <th>Urgency Level</th>
-      <th>Precision</th>
-      <th>Recall</th>
-      <th>F1-Score</th>
-      <th>Support</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><strong>Low</strong></td>
-      <td>0.92</td>
-      <td>0.89</td>
-      <td>0.90</td>
-      <td>450</td>
-    </tr>
-    <tr>
-      <td><strong>Medium</strong></td>
-      <td>0.87</td>
-      <td>0.85</td>
-      <td>0.86</td>
-      <td>320</td>
-    </tr>
-    <tr>
-      <td><strong>High</strong></td>
-      <td>0.94</td>
-      <td>0.91</td>
-      <td>0.92</td>
-      <td>230</td>
-    </tr>
-  </tbody>
-</table>
+| Urgency Level | Precision | Recall | F1-Score | Support |
+|---------------|-----------|--------|----------|---------|
+| **Low**       | 0.92      | 0.89   | 0.90     | 450     |
+| **Medium**    | 0.87      | 0.85   | 0.86     | 320     |
+| **High**      | 0.94      | 0.91   | 0.92     | 230     |
 
-<p><strong>Overall Accuracy</strong>: 89.3%<br>
-<strong>Macro F1-Score</strong>: 0.89<br>
-<strong>Weighted F1-Score</strong>: 0.88</p>
+**Overall Accuracy**: 89.3%  
+**Macro F1-Score**: 0.89  
+**Weighted F1-Score**: 0.88
 
 ```
 
 # System Performance Metrics
 
 ``` 
-<table>
-  <thead>
-    <tr>
-      <th>Component</th>
-      <th>Performance</th>
-      <th>Latency</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Audio Transcription</td>
-      <td>95.2% WER</td>
-      <td>2-5 sec/min</td>
-    </tr>
-    <tr>
-      <td>Urgency Prediction</td>
-      <td>89.3% Accuracy</td>
-      <td>&lt; 1 sec</td>
-    </tr>
-    <tr>
-      <td>Email Delivery</td>
-      <td>99.8% Success Rate</td>
-      <td>&lt; 10 sec</td>
-    </tr>
-    <tr>
-      <td>Database Operations</td>
-      <td>100% Reliability</td>
-      <td>&lt; 500 ms</td>
-    </tr>
-  </tbody>
-</table>
-Training Statistics
-html
-<table>
-  <thead>
-    <tr>
-      <th>Metric</th>
-      <th>Value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Training Samples</td>
-      <td>1,500</td>
-    </tr>
-    <tr>
-      <td>Validation Samples</td>
-      <td>500</td>
-    </tr>
-    <tr>
-      <td>Epochs</td>
-      <td>3</td>
-    </tr>
-    <tr>
-      <td>Batch Size</td>
-      <td>8</td>
-    </tr>
-    <tr>
-      <td>Learning Rate</td>
-      <td>2e-5</td>
-    </tr>
-    <tr>
-      <td>Final Loss</td>
-      <td>0.23</td>
-    </tr>
-    <tr>
-      <td>Validation Accuracy</td>
-      <td>89.3%</td>
-    </tr>
-  </tbody>
-</table>
-Real-world Deployment Results
-html
-<table>
-  <thead>
-    <tr>
-      <th>Metric</th>
-      <th>Value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Total Analyses</td>
-      <td>1,247</td>
-    </tr>
-    <tr>
-      <td>High Urgency Cases</td>
-      <td>156 (12.5%)</td>
-    </tr>
-    <tr>
-      <td>Medium Urgency Cases</td>
-      <td>389 (31.2%)</td>
-    </tr>
-    <tr>
-      <td>Low Urgency Cases</td>
-      <td>702 (56.3%)</td>
-    </tr>
-    <tr>
-      <td>Email Alerts Sent</td>
-      <td>156</td>
-    </tr>
-    <tr>
-      <td>Average Confidence</td>
-      <td>87.4%</td>
-    </tr>
-  </tbody>
-</table>
+| Component | Performance | Latency |
+|-----------|-------------|---------|
+| Audio Transcription | 95.2% WER | 2-5 sec/min |
+| Urgency Prediction | 89.3% Accuracy | < 1 sec |
+| Email Delivery | 99.8% Success Rate | < 10 sec |
+| Database Operations | 100% Reliability | < 500 ms |
+
 ``` 
+## Training Statistics
 
+```
+| Metric | Value |
+|--------|-------|
+| Training Samples | 1,500 |
+| Validation Samples | 500 |
+| Epochs | 3 |
+| Batch Size | 8 |
+| Learning Rate | 2e-5 |
+| Final Loss | 0.23 |
+| Validation Accuracy | 89.3% |
 
+```
+## Real-world Deployment Results
+
+```
+| Metric | Value |
+|--------|-------|
+| Total Analyses | 1,247 |
+| High Urgency Cases | 156 (12.5%) |
+| Medium Urgency Cases | 389 (31.2%) |
+| Low Urgency Cases | 702 (56.3%) |
+| Email Alerts Sent | 156 |
+| Average Confidence | 87.4% |
+```
 
 
 ### 🔧 API Documentation
@@ -590,58 +485,17 @@ result = predictor.predict_urgency("Patient experiencing chest pain and shortnes
 
 ### 🛠 Technology Stack
 
-# Programming & Core
+<!-- Python Version -->
+![Python Version](https://img.shields.io/badge/Python-3.10.5-blue?style=flat-square&logo=python)
 
-[(https://img.shields.io/badge/Python-3.8%252B-blue?style=flat-square&logo=python)]
-[(https://img.shields.io/badge/Notebook-Jupyter-orange?style=flat-square&logo=jupyter)]
-[(https://img.shields.io/badge/Platform-Kaggle-20BEFF?style=flat-square&logo=kaggle)]
+<!-- HuggingFace Transformers -->
+![HuggingFace](https://img.shields.io/badge/Transformers-HuggingFace-yellow?style=flat-square&logo=huggingface)
 
-# Machine Learning & AI
+<!-- Streamlit -->
+![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red?style=flat-square&logo=streamlit)
 
-[)https://img.shields.io/badge/ML%2520Framework-PyTorch-red?style=flat-square&logo=pytorch)]
-[(https://img.shields.io/badge/NLP-Transformers-yellow?style=flat-square&logo=huggingface)]
-[(https://img.shields.io/badge/ASR-OpenAI%2520Whisper-000000?style=flat-square&logo=openai)]
-[(https://img.shields.io/badge/Model-BioClinicalBERT-FF6B6B?style=flat-square)]
-[(https://img.shields.io/badge/ML-Scikit--learn-F7931E?style=flat-square&logo=scikit-learn)]
-
-# Audio Processing
-
-https://img.shields.io/badge/Audio-Librosa-00A98F?style=flat-square
-https://img.shields.io/badge/Audio-SoundFile-8B4513?style=flat-square
-https://img.shields.io/badge/Audio-PyDub-FF69B4?style=flat-square
-
-Web Framework & Frontend
-https://img.shields.io/badge/Frontend-Streamlit-FF4B4B?style=flat-square&logo=streamlit
-https://img.shields.io/badge/Visualization-Plotly-3F4F75?style=flat-square&logo=plotly
-https://img.shields.io/badge/API-FastAPI-009688?style=flat-square&logo=fastapi
-
-Data Processing & Analysis
-https://img.shields.io/badge/Data-Pandas-150458?style=flat-square&logo=pandas
-https://img.shields.io/badge/Computing-NumPy-013243?style=flat-square&logo=numpy
-https://img.shields.io/badge/Science-SciPy-8CAAE6?style=flat-square&logo=scipy
-
-Database & Storage
-https://img.shields.io/badge/Database-SQLite-003B57?style=flat-square&logo=sqlite
-https://img.shields.io/badge/Validation-Pydantic-E92063?style=flat-square
-
-Visualization
-https://img.shields.io/badge/Plotting-Matplotlib-11557C?style=flat-square&logo=matplotlib
-https://img.shields.io/badge/Visualization-Seaborn-5B8DB8?style=flat-square
-https://img.shields.io/badge/Viz-Altair-1EAE84?style=flat-square
-
-Communication & Alerts
-https://img.shields.io/badge/Email-SMTP-2C8CBB?style=flat-square
-https://img.shields.io/badge/Service-Gmail%2520API-EA4335?style=flat-square&logo=gmail
-
-Development Tools
-https://img.shields.io/badge/NLP-SpaCy-09A3D5?style=flat-square&logo=spacy
-https://img.shields.io/badge/Progress-TQDM-FF6F00?style=flat-square
-https://img.shields.io/badge/Server-Uvicorn-5CD85A?style=flat-square
-
-Deployment & Environment
-https://img.shields.io/badge/Environment-VirtualEnv-4479A1?style=flat-square
-https://img.shields.io/badge/Config-DotEnv-ECD53F?style=flat-square
-
+<!-- License -->
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 
 ### 📋 Complete Stack Overview
