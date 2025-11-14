@@ -1,8 +1,9 @@
 ### 🏥 AI-Doctor-Alert: Medical Urgency Analysis System
-https://img.shields.io/badge/Kaggle-Notebook-blue?logo=kaggle
-https://img.shields.io/badge/Python-3.8%252B-blue?logo=python
-https://img.shields.io/badge/Streamlit-1.28%252B-red?logo=streamlit
-https://img.shields.io/badge/HuggingFace-Transformers-yellow?logo=huggingface
+[![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-blue?logo=kaggle)](https://www.kaggle.com)
+[![Python](https://img.shields.io/badge/Python-3.8%252B-blue?logo=python)](https://www.python.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.28%252B-red?logo=streamlit)](https://streamlit.io)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-yellow?logo=huggingface)](https://huggingface.co)
+
 
 ## An intelligent medical urgency analysis system that processes audio recordings, transcribes medical conversations, analyzes urgency levels, and automatically alerts doctors for critical cases using AI-powered classification.
 
@@ -554,11 +555,10 @@ For support and questions:
 
 ### 🙏 Acknowledgments
 
-## BioClinicalBERT by Emily Alsentzer et al.
-## OpenAI Whisper for speech recognition
-## Hugging Face for transformer models
-## Kaggle for medical datasets
-## Streamlit for web application framework
+[🧬 BioClinicalBERT(https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT)]
+[🎙️ OpenAI Whisper — Speech Recognition(https://cdn.openai.com/papers/whisper.pdf)]
+[🤗 Hugging Face Transformers(https://github.com/huggingface/transformers)]
+[🌐 Streamlit Framework(https://streamlit.io/)]
 
 
 
