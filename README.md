@@ -1,6 +1,7 @@
 ### 🏥 AI-Doctor-Alert: Medical Urgency Analysis System
+
 [![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-blue?logo=kaggle)](https://www.kaggle.com)
-[![Python](https://img.shields.io/badge/Python-3.8%252B-blue?logo=python)](https://www.python.org)
+[![Python](https://img.shields.io/badge/Python-3.10%252B-blue?logo=python)](https://www.python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%252B-red?logo=streamlit)](https://streamlit.io)
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-yellow?logo=huggingface)](https://huggingface.co)
 
@@ -555,10 +556,10 @@ For support and questions:
 
 ### 🙏 Acknowledgments
 
-[🧬 BioClinicalBERT(https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT)]
-[🎙️ OpenAI Whisper — Speech Recognition(https://cdn.openai.com/papers/whisper.pdf)]
-[🤗 Hugging Face Transformers(https://github.com/huggingface/transformers)]
-[🌐 Streamlit Framework(https://streamlit.io/)]
+    - [🧬 BioClinicalBERT(https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT)]
+    [🎙️ OpenAI Whisper — Speech Recognition(https://cdn.openai.com/papers/whisper.pdf)]
+    [🤗 Hugging Face Transformers(https://github.com/huggingface/transformers)]
+    [🌐 Streamlit Framework(https://streamlit.io/)]
 
 
 
