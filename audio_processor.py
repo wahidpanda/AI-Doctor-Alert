@@ -18,6 +18,15 @@ logger = logging.getLogger(__name__)
 import warnings
 warnings.filterwarnings("ignore")
 
+# Try to import resampy, fallback to scipy if not available
+try:
+    import resampy
+    HAS_RESAMPY = True
+    logger.info("resampy available for audio resampling")
+except ImportError:
+    HAS_RESAMPY = False
+    logger.warning("resampy not available, using scipy for resampling")
+
 class AudioProcessor:
     def __init__(self):
         self.target_sample_rate = 16000  # Whisper requires 16kHz
@@ -56,66 +65,21 @@ class AudioProcessor:
             # Don't remove from temp_files list so we can try again later
             return False
         return False
-        
-    def record_audio(self, duration=10, sample_rate=16000):
-        """Record audio using Streamlit's native audio input"""
-        try:
-            logger.info(f"Waiting for audio recording...")
-            
-            # Use Streamlit's built-in audio recorder
-            st.info("🎤 Click the microphone button below to start recording...")
-            audio_bytes = st.audio_input("Speak now...", key=f"recorder_{duration}")
-            
-            if audio_bytes:
-                logger.info("Audio recording received")
-                
-                # Convert bytes to AudioSegment
-                audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
-                
-                # Convert to numpy array
-                samples = np.array(audio.get_array_of_samples())
-                
-                # Convert to float32 for processing
-                samples = samples.astype(np.float32) / 32768.0  # Normalize to [-1, 1]
-                
-                logger.info(f"Recording finished: {len(samples)} samples, {audio.frame_rate}Hz")
-                return samples, audio.frame_rate
-            else:
-                logger.warning("No audio recorded - user didn't record anything")
-                return None, sample_rate
-            
-        except Exception as e:
-            logger.error(f"Recording failed: {e}")
-            st.error(f"Audio recording failed: {e}")
-            return None, sample_rate
     
-    def save_audio_file(self, audio_data, file_path):
-        """Save audio data to WAV file at 16kHz - FIXED to handle None"""
+    def resample_audio(self, audio_data, original_sr, target_sr):
+        """Resample audio using available methods"""
         try:
-            logger.info(f"Saving audio to {file_path}")
-            
-            # Check if audio_data is None
-            if audio_data is None:
-                raise Exception("No audio data to save - recording failed or no audio recorded")
-                
-            if len(audio_data) == 0:
-                raise Exception("Empty audio data")
-                
-            # Ensure audio data is properly scaled for 16-bit PCM
-            audio_data_int16 = np.int16(audio_data * 32767)
-            
-            with wave.open(file_path, 'wb') as wf:
-                wf.setnchannels(self.channels)
-                wf.setsampwidth(2)
-                wf.setframerate(self.target_sample_rate)
-                wf.writeframes(audio_data_int16.tobytes())
-            
-            logger.info(f"Audio saved successfully to {file_path} at {self.target_sample_rate}Hz")
-            return True
-            
+            if HAS_RESAMPY:
+                # Use resampy if available (better quality)
+                return resampy.resample(audio_data, original_sr, target_sr)
+            else:
+                # Fallback to scipy resampling
+                from scipy import signal
+                num_samples = int(len(audio_data) * target_sr / original_sr)
+                return signal.resample(audio_data, num_samples)
         except Exception as e:
-            logger.error(f"Error saving audio file: {e}")
-            raise Exception(f"Error saving audio file: {e}")
+            logger.error(f"Resampling failed: {e}")
+            raise
     
     def preprocess_audio(self, audio_data, original_sr):
         """Preprocess audio: resample to 16kHz, convert to mono, noise suppression"""
@@ -134,12 +98,7 @@ class AudioProcessor:
             # Always resample to 16kHz for Whisper compatibility
             if original_sr != self.target_sample_rate:
                 logger.info(f"Resampling from {original_sr}Hz to {self.target_sample_rate}Hz")
-                audio_data = librosa.resample(
-                    audio_data, 
-                    orig_sr=original_sr, 
-                    target_sr=self.target_sample_rate,
-                    res_type='kaiser_fast'
-                )
+                audio_data = self.resample_audio(audio_data, original_sr, self.target_sample_rate)
             
             # Simple noise reduction
             audio_data = self._noise_reduction(audio_data)
@@ -177,22 +136,48 @@ class AudioProcessor:
             audio_data = audio_data / max_val * 0.9
         return audio_data
     
+    def save_audio_file(self, audio_data, file_path):
+        """Save audio data to WAV file at 16kHz"""
+        try:
+            logger.info(f"Saving audio to {file_path}")
+            
+            if audio_data is None:
+                raise Exception("No audio data to save")
+                
+            if len(audio_data) == 0:
+                raise Exception("Empty audio data")
+                
+            # Ensure audio data is properly scaled for 16-bit PCM
+            audio_data_int16 = np.int16(audio_data * 32767)
+            
+            with wave.open(file_path, 'wb') as wf:
+                wf.setnchannels(self.channels)
+                wf.setsampwidth(2)
+                wf.setframerate(self.target_sample_rate)
+                wf.writeframes(audio_data_int16.tobytes())
+            
+            logger.info(f"Audio saved successfully to {file_path} at {self.target_sample_rate}Hz")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error saving audio file: {e}")
+            raise Exception(f"Error saving audio file: {e}")
+    
     def load_and_preprocess_audio(self, file_path):
         """Load audio file and preprocess to 16kHz mono"""
         try:
             logger.info(f"Loading and preprocessing audio file: {file_path}")
             
-            # Load audio with librosa
+            # Load audio with librosa (it will handle resampy internally)
             audio_data, original_sr = librosa.load(
                 file_path, 
-                sr=None,
-                mono=True,
-                res_type='kaiser_fast'
+                sr=self.target_sample_rate,  # Let librosa handle resampling
+                mono=True
             )
             
-            logger.info(f"Original audio: {len(audio_data)} samples, {original_sr}Hz")
+            logger.info(f"Loaded audio: {len(audio_data)} samples, {original_sr}Hz")
             
-            # Preprocess to 16kHz
+            # Apply additional preprocessing
             processed_audio = self.preprocess_audio(audio_data, original_sr)
             
             logger.info(f"Processed audio: {len(processed_audio)} samples, {self.target_sample_rate}Hz")
@@ -207,7 +192,7 @@ class AudioProcessor:
         try:
             logger.info(f"Converting {input_path} to 16kHz WAV: {output_path}")
             
-            # Load and preprocess audio
+            # Load and preprocess audio to 16kHz
             audio_data, sr = self.load_and_preprocess_audio(input_path)
             
             # Save as 16kHz WAV
@@ -266,12 +251,6 @@ class WhisperTranscriber:
             
             # Load and preprocess audio to 16kHz
             audio_data, sample_rate = self.audio_processor.load_and_preprocess_audio(audio_file_path)
-            
-            # Verify sample rate is 16kHz
-            if sample_rate != 16000:
-                logger.warning(f"Sample rate is {sample_rate}Hz, expected 16000Hz. Resampling...")
-                audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=16000)
-                sample_rate = 16000
             
             # Process with Whisper
             transcription = self._transcribe_audio_array(audio_data, sample_rate)
@@ -334,26 +313,25 @@ class WhisperTranscriber:
     def transcribe_uploaded_file(self, uploaded_file):
         """Transcribe uploaded file - handles any format and sample rate"""
         input_path = None
-        output_path = None
         
         try:
-            logger.info(f"Transcribing uploaded file: {uploaded_file.name}")
+            logger.info(f"Transcribing uploaded file")
             
             # Create temporary input file
-            file_extension = os.path.splitext(uploaded_file.name)[1].lower()
-            input_path = self.audio_processor.create_temp_file(suffix=file_extension)
+            input_path = self.audio_processor.create_temp_file(suffix='.wav')
             
-            with open(input_path, 'wb') as f:
-                f.write(uploaded_file.getvalue())
+            # Handle both bytes and UploadedFile objects
+            if hasattr(uploaded_file, 'read'):
+                # It's a file-like object (UploadedFile)
+                with open(input_path, 'wb') as f:
+                    f.write(uploaded_file.read())
+            else:
+                # It's bytes
+                with open(input_path, 'wb') as f:
+                    f.write(uploaded_file)
             
-            # Create temporary output file (16kHz WAV)
-            output_path = self.audio_processor.create_temp_file(suffix='.wav')
-            
-            # Convert to 16kHz WAV first
-            self.audio_processor.convert_audio_to_16khz(input_path, output_path)
-            
-            # Transcribe the converted file
-            transcription = self.transcribe_audio(output_path)
+            # Transcribe the file
+            transcription = self.transcribe_audio(input_path)
             
             return transcription
             
@@ -364,8 +342,6 @@ class WhisperTranscriber:
             # Clean up temporary files
             if input_path:
                 self.audio_processor.safe_delete(input_path)
-            if output_path:
-                self.audio_processor.safe_delete(output_path)
 
 
 # Audio info function
