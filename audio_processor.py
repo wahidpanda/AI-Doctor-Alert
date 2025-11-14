@@ -63,7 +63,8 @@ class AudioProcessor:
             logger.info(f"Waiting for audio recording...")
             
             # Use Streamlit's built-in audio recorder
-            audio_bytes = st.audio_input("Click to record audio", key=f"recorder_{duration}")
+            st.info("🎤 Click the microphone button below to start recording...")
+            audio_bytes = st.audio_input("Speak now...", key=f"recorder_{duration}")
             
             if audio_bytes:
                 logger.info("Audio recording received")
@@ -74,10 +75,13 @@ class AudioProcessor:
                 # Convert to numpy array
                 samples = np.array(audio.get_array_of_samples())
                 
+                # Convert to float32 for processing
+                samples = samples.astype(np.float32) / 32768.0  # Normalize to [-1, 1]
+                
                 logger.info(f"Recording finished: {len(samples)} samples, {audio.frame_rate}Hz")
                 return samples, audio.frame_rate
             else:
-                logger.info("No audio recorded")
+                logger.warning("No audio recorded - user didn't record anything")
                 return None, sample_rate
             
         except Exception as e:
@@ -85,12 +89,44 @@ class AudioProcessor:
             st.error(f"Audio recording failed: {e}")
             return None, sample_rate
     
+    def save_audio_file(self, audio_data, file_path):
+        """Save audio data to WAV file at 16kHz - FIXED to handle None"""
+        try:
+            logger.info(f"Saving audio to {file_path}")
+            
+            # Check if audio_data is None
+            if audio_data is None:
+                raise Exception("No audio data to save - recording failed or no audio recorded")
+                
+            if len(audio_data) == 0:
+                raise Exception("Empty audio data")
+                
+            # Ensure audio data is properly scaled for 16-bit PCM
+            audio_data_int16 = np.int16(audio_data * 32767)
+            
+            with wave.open(file_path, 'wb') as wf:
+                wf.setnchannels(self.channels)
+                wf.setsampwidth(2)
+                wf.setframerate(self.target_sample_rate)
+                wf.writeframes(audio_data_int16.tobytes())
+            
+            logger.info(f"Audio saved successfully to {file_path} at {self.target_sample_rate}Hz")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error saving audio file: {e}")
+            raise Exception(f"Error saving audio file: {e}")
+    
     def preprocess_audio(self, audio_data, original_sr):
         """Preprocess audio: resample to 16kHz, convert to mono, noise suppression"""
         try:
+            # Check if audio_data is None
+            if audio_data is None:
+                raise Exception("No audio data to process")
+                
             logger.info(f"Preprocessing audio: {original_sr}Hz -> {self.target_sample_rate}Hz")
             
-            # Convert to mono if stereo
+            # Convert to mono if stereo (though Streamlit audio should already be mono)
             if len(audio_data.shape) > 1:
                 audio_data = np.mean(audio_data, axis=1)
                 logger.info("Converted stereo to mono")
@@ -140,29 +176,6 @@ class AudioProcessor:
         if max_val > 0:
             audio_data = audio_data / max_val * 0.9
         return audio_data
-    
-    def save_audio_file(self, audio_data, filename):
-        """Save audio data to WAV file at 16kHz"""
-        try:
-            logger.info(f"Saving audio to {filename}")
-            
-            if len(audio_data) == 0:
-                raise Exception("Empty audio data")
-                
-            # Ensure audio data is properly scaled for 16-bit PCM
-            audio_data = np.int16(audio_data * 32767)
-            
-            with wave.open(filename, 'wb') as wf:
-                wf.setnchannels(self.channels)
-                wf.setsampwidth(2)
-                wf.setframerate(self.target_sample_rate)
-                wf.writeframes(audio_data.tobytes())
-            
-            logger.info(f"Audio saved successfully to {filename} at {self.target_sample_rate}Hz")
-            
-        except Exception as e:
-            logger.error(f"Error saving audio file: {e}")
-            raise Exception(f"Error saving audio file: {e}")
     
     def load_and_preprocess_audio(self, file_path):
         """Load audio file and preprocess to 16kHz mono"""
