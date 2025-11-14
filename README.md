@@ -36,7 +36,7 @@
 
 ## 🔧 System Architecture
 
-```
+flowchart TD
     A[Audio Input] --> B[Data Processing Pipeline]
     B --> C[Speech Transcription]
     C --> D[Medical BERT Analysis]
@@ -47,7 +47,7 @@
     F --> H[Doctor Notification]
     G --> I[Web Dashboard]
     H --> I
-```
+
 
 ### 📊 Methodology
 
