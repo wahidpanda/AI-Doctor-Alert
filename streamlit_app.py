@@ -381,40 +381,39 @@ def show_upload_interface(audio_processor, transcriber, model_predictor):
 
 
 def show_recording_interface(audio_processor, transcriber, model_predictor):
-    """Show recording interface"""
+    """Show recording interface using Streamlit's native audio input"""
     st.info("""
     **Recording Instructions:**
+    - Click the microphone button below to record
     - Ensure you're in a quiet environment
     - Speak clearly and describe symptoms in detail
     - Recommended duration: 10-30 seconds
+    - After recording, click 'Analyze Recording' to process
     """)
     
-    duration = st.slider("Recording duration (seconds)", 5, 60, 10)
+    # Use Streamlit's native audio input - this works on Streamlit Cloud
+    audio_bytes = st.audio_input("Click the microphone to record audio", key="audio_recorder")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🎤 Start Recording", type="primary", key="start_record"):
-            with st.spinner(f"🎙️ Recording for {duration} seconds..."):
+    if audio_bytes is not None:
+        # Show the recorded audio
+        st.audio(audio_bytes, format="audio/wav")
+        st.success("✅ Recording completed! Click 'Analyze Recording' below.")
+        
+        if st.button("Analyze Recording", type="primary", key="analyze_record"):
+            with st.spinner("🔍 Processing recording..."):
                 try:
-                    audio_data, sample_rate = audio_processor.record_audio(duration, sample_rate=16000)
+                    # Save temporary file directly from bytes
                     temp_path = audio_processor.create_temp_file(suffix='.wav')
-                    audio_processor.save_audio_file(audio_data, temp_path)
-                    st.session_state.recorded_audio_path = temp_path
-                    st.success("✅ Recording completed!")
-                    st.audio(st.session_state.recorded_audio_path, format='audio/wav')
-                except Exception as e:
-                    st.error(f"❌ Recording failed: {e}")
-    
-    with col2:
-        if st.button("Analyze Recording", type="secondary", key="analyze_record"):
-            if st.session_state.get('recorded_audio_path'):
-                with st.spinner("🔍 Processing recording..."):
+                    with open(temp_path, 'wb') as f:
+                        f.write(audio_bytes)
+                    
+                    # Process the recording
                     result = process_recorded_audio(
-                        st.session_state.recorded_audio_path, 
+                        temp_path, 
                         transcriber, 
                         model_predictor
                     )
+                    
                     if result['success']:
                         st.session_state.current_analysis_result = result
                         st.session_state.analysis_complete = True
@@ -423,13 +422,17 @@ def show_recording_interface(audio_processor, transcriber, model_predictor):
                         if result['urgency_level'] == "High":
                             send_doctor_alert(result)
                         
-                        safe_delete_file(st.session_state.recorded_audio_path)
-                        st.session_state.recorded_audio_path = None
+                        # Clean up
+                        safe_delete_file(temp_path)
+                        
                         st.rerun()
                     else:
                         st.error(f"❌ Analysis failed: {result['error']}")
-            else:
-                st.warning("⚠️ Please record audio first")
+                        
+                except Exception as e:
+                    st.error(f"❌ Processing error: {e}")
+    else:
+        st.info("🎤 Click the microphone button above to start recording")
 
 def send_doctor_alert(analysis_result):
     """Send email alert to doctor for high urgency cases"""
