@@ -19,4 +19,4 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
-pyaduio
+pyaudio
