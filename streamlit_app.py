@@ -402,12 +402,18 @@ def show_recording_interface(audio_processor, transcriber, model_predictor):
         if st.button("Analyze Recording", type="primary", key="analyze_record"):
             with st.spinner("🔍 Processing recording..."):
                 try:
-                    # Save temporary file directly from bytes
+                    # Save temporary file - handle both bytes and UploadedFile
                     temp_path = audio_processor.create_temp_file(suffix='.wav')
-                    with open(temp_path, 'wb') as f:
-                        f.write(audio_bytes)
                     
-                    # Process the recording
+                    # Handle the audio data properly
+                    if hasattr(audio_bytes, 'read'):  # It's a file-like object
+                        with open(temp_path, 'wb') as f:
+                            f.write(audio_bytes.read())
+                    else:  # It's already bytes
+                        with open(temp_path, 'wb') as f:
+                            f.write(audio_bytes)
+                    
+                    # Process the recording using the existing function
                     result = process_recorded_audio(
                         temp_path, 
                         transcriber, 
