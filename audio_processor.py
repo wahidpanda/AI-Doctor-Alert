@@ -1,6 +1,5 @@
 import librosa
 import numpy as np
-import sounddevice as sd
 from scipy import signal
 import wave
 import io
@@ -8,6 +7,8 @@ import tempfile
 import os
 import logging
 import atexit
+from pydub import AudioSegment
+import streamlit as st
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -57,25 +58,32 @@ class AudioProcessor:
         return False
         
     def record_audio(self, duration=10, sample_rate=16000):
-        """Record audio from microphone"""
+        """Record audio using Streamlit's native audio input"""
         try:
-            logger.info(f"Recording audio for {duration} seconds...")
+            logger.info(f"Waiting for audio recording...")
             
-            # Record audio
-            audio_data = sd.rec(
-                int(duration * sample_rate), 
-                samplerate=sample_rate, 
-                channels=1, 
-                dtype='float32'
-            )
-            sd.wait()
+            # Use Streamlit's built-in audio recorder
+            audio_bytes = st.audio_input("Click to record audio", key=f"recorder_{duration}")
             
-            logger.info("Recording finished successfully")
-            return audio_data.flatten(), sample_rate
+            if audio_bytes:
+                logger.info("Audio recording received")
+                
+                # Convert bytes to AudioSegment
+                audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
+                
+                # Convert to numpy array
+                samples = np.array(audio.get_array_of_samples())
+                
+                logger.info(f"Recording finished: {len(samples)} samples, {audio.frame_rate}Hz")
+                return samples, audio.frame_rate
+            else:
+                logger.info("No audio recorded")
+                return None, sample_rate
             
         except Exception as e:
             logger.error(f"Recording failed: {e}")
-            raise Exception(f"Audio recording failed: {e}")
+            st.error(f"Audio recording failed: {e}")
+            return None, sample_rate
     
     def preprocess_audio(self, audio_data, original_sr):
         """Preprocess audio: resample to 16kHz, convert to mono, noise suppression"""
