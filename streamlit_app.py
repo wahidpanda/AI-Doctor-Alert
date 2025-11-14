@@ -595,20 +595,21 @@ def display_analysis_result(result):
         fig_gauge.update_layout(height=250)
         st.plotly_chart(fig_gauge, use_container_width=True)
         
-        # Results in columns
+        # Results in columns - FIXED: No nested columns
         col1, col2 = st.columns([2, 1])
         
         with col1:
             st.subheader("📝 Transcribed Text")
             st.write(result['transcribed_text'])
             
+            # File Information - FIXED: Use single level columns
             st.subheader("📊 File Information")
-            col1a, col1b, col1c = st.columns(3)
-            with col1a:
+            file_col1, file_col2, file_col3 = st.columns(3)
+            with file_col1:
                 st.metric("Duration", f"{result.get('duration', 0):.1f}s")
-            with col1b:
+            with file_col2:
                 st.metric("Sample Rate", f"{result.get('sample_rate', 0)}Hz")
-            with col1c:
+            with file_col3:
                 st.metric("File", result['filename'])
         
         with col2:
