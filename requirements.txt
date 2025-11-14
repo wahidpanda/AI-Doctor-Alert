@@ -19,3 +19,5 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
+sounddevice
+pyaduio
