@@ -888,7 +888,7 @@ def show_account_info():
         
         if st.button("Confirm Deletion", type="primary"):
             st.error("Data deletion feature not implemented in demo")
-
+#
 def show_email_settings():
     """Show email configuration settings"""
     st.title("📧 Email Notification Settings")
