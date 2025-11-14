@@ -568,82 +568,44 @@ def process_recorded_audio(audio_path, transcriber, model_predictor):
         return {'success': False, 'error': str(e)}
 
 def display_analysis_result(result):
-    """Display analysis results with enhanced visualization"""
+    """Display analysis results - simple version without nested columns"""
     if result['success']:
-        # Confidence gauge
+        # Confidence score
         confidence = result.get('confidence_score', 0.5)
-        fig_gauge = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = confidence * 100,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Confidence Score"},
-            gauge = {
-                'axis': {'range': [None, 100]},
-                'bar': {'color': "darkblue"},
-                'steps': [
-                    {'range': [0, 50], 'color': "lightgray"},
-                    {'range': [50, 80], 'color': "yellow"},
-                    {'range': [80, 100], 'color': "lightgreen"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 90
-                }
-            }
-        ))
-        fig_gauge.update_layout(height=250)
-        st.plotly_chart(fig_gauge, use_container_width=True)
+        st.metric("Confidence Score", f"{confidence:.2f}")
         
-        # Results in columns - FIXED: No nested columns
-        col1, col2 = st.columns([2, 1])
+        # Transcribed Text
+        st.subheader("📝 Transcribed Text")
+        st.write(result['transcribed_text'])
         
-        with col1:
-            st.subheader("📝 Transcribed Text")
-            st.write(result['transcribed_text'])
-            
-            # File Information - FIXED: Use single level columns
-            st.subheader("📊 File Information")
-            file_col1, file_col2, file_col3 = st.columns(3)
-            with file_col1:
-                st.metric("Duration", f"{result.get('duration', 0):.1f}s")
-            with file_col2:
-                st.metric("Sample Rate", f"{result.get('sample_rate', 0)}Hz")
-            with file_col3:
-                st.metric("File", result['filename'])
+        # File Information
+        st.subheader("📊 File Information")
+        st.write(f"**Duration:** {result.get('duration', 0):.1f}s")
+        st.write(f"**Sample Rate:** {result.get('sample_rate', 0)}Hz") 
+        st.write(f"**File:** {result['filename']}")
         
-        with col2:
-            st.subheader("🔍 Medical Analysis")
-            
-            # Urgency level with visual indicators
-            urgency = result['urgency_level']
-            if urgency == "High":
-                st.error(f"🚨 **Urgency Level:** {urgency}")
-                st.progress(0.9)
-                # Show email notification status
-                if result.get('alarm_status') == "Notified to Dr":
-                    st.success("📧 Alert sent to doctor")
-                else:
-                    st.info("📧 Doctor will be notified for high urgency cases")
-            elif urgency == "Medium":
-                st.warning(f"⚠️ **Urgency Level:** {urgency}")
-                st.progress(0.6)
-            else:
-                st.success(f"✅ **Urgency Level:** {urgency}")
-                st.progress(0.3)
-            
-            st.info(f"**Patient Status:** {result['patient_status']}")
-            
-            if result['alarm_status'] == "Notified to Dr":
-                st.error(f"🔔 **Alarm Status:** {result['alarm_status']}")
-            else:
-                st.success(f"🔕 **Alarm Status:** {result['alarm_status']}")
-            
-            st.metric("Confidence Score", f"{result['confidence_score']:.2f}")
+        # Medical Analysis
+        st.subheader("🔍 Medical Analysis")
         
-        # Record ID for reference
+        # Urgency level
+        urgency = result['urgency_level']
+        if urgency == "High":
+            st.error(f"🚨 **Urgency Level:** {urgency}")
+        elif urgency == "Medium":
+            st.warning(f"⚠️ **Urgency Level:** {urgency}")
+        else:
+            st.success(f"✅ **Urgency Level:** {urgency}")
+        
+        st.info(f"**Patient Status:** {result['patient_status']}")
+        st.write(f"**Alarm Status:** {result['alarm_status']}")
+        
+        # Email notification status
+        if urgency == "High" and result.get('alarm_status') == "Notified to Dr":
+            st.success("📧 Alert email sent to doctor")
+        
+        # Record ID
         if result.get('record_id'):
-            st.success(f"✅ Analysis saved to database (Record ID: {result['record_id']})")
+            st.success(f"✅ Analysis saved (Record ID: {result['record_id']})")
 
 def show_dashboard_stats():
     """Show dashboard statistics"""
