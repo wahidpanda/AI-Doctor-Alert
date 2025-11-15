@@ -17,11 +17,18 @@ logger = logging.getLogger(__name__)
 import warnings
 warnings.filterwarnings("ignore")
 
-# Try to import pydub
+# Try to import pydub with error handling
 try:
     from pydub import AudioSegment
-    HAS_PYDUB = True
-    logger.info("pydub available for audio conversion")
+    # Check if ffmpeg/ffprobe is available
+    try:
+        # Test if pydub can work
+        AudioSegment.from_file(io.BytesIO(b"test"), format="wav")
+        HAS_PYDUB = True
+        logger.info("pydub available for audio conversion")
+    except:
+        HAS_PYDUB = False
+        logger.warning("pydub available but ffmpeg/ffprobe not found, using alternative methods")
 except ImportError:
     HAS_PYDUB = False
     logger.warning("pydub not available, using alternative methods")
@@ -189,45 +196,40 @@ class AudioProcessor:
             raise Exception(f"Error loading audio file: {e}")
     
     def process_uploaded_file_directly(self, uploaded_file):
-        """Process uploaded file directly without saving to disk first"""
+        """Process uploaded file directly without saving to disk first - NO PYDUB DEPENDENCY"""
         try:
             logger.info(f"Processing uploaded file directly: {uploaded_file.name}")
             
             # Get file extension
             file_ext = os.path.splitext(uploaded_file.name)[1].lower()
             
-            if file_ext == '.wav':
-                # For WAV files, we can process directly
-                audio_data, original_sr = librosa.load(
-                    io.BytesIO(uploaded_file.getvalue()),
-                    sr=self.target_sample_rate,
-                    mono=True
-                )
-            else:
-                # For other formats, use pydub if available
-                if HAS_PYDUB:
-                    # Convert using pydub
-                    audio_segment = AudioSegment.from_file(io.BytesIO(uploaded_file.getvalue()))
-                    
-                    # Convert to mono and set sample rate
-                    audio_segment = audio_segment.set_channels(1)
-                    audio_segment = audio_segment.set_frame_rate(self.target_sample_rate)
-                    
-                    # Export to WAV bytes
-                    wav_buffer = io.BytesIO()
-                    audio_segment.export(wav_buffer, format="wav")
-                    wav_buffer.seek(0)
-                    
-                    # Load with librosa
-                    audio_data, original_sr = librosa.load(wav_buffer, sr=self.target_sample_rate, mono=True)
+            # For all formats, use librosa directly with error handling
+            try:
+                # Try to load directly with librosa
+                if file_ext == '.wav':
+                    # WAV files can be loaded directly from bytes
+                    audio_data, original_sr = librosa.load(
+                        io.BytesIO(uploaded_file.getvalue()),
+                        sr=self.target_sample_rate,
+                        mono=True
+                    )
                 else:
-                    # Fallback: save to temp file and process
-                    temp_path = self.create_temp_file(suffix=file_ext)
-                    with open(temp_path, 'wb') as f:
-                        f.write(uploaded_file.getvalue())
-                    audio_data, original_sr, duration = self.load_and_preprocess_audio(temp_path)
-                    self.safe_delete(temp_path)
-                    return audio_data, original_sr, duration
+                    # For other formats, use librosa with resampling
+                    audio_data, original_sr = librosa.load(
+                        io.BytesIO(uploaded_file.getvalue()),
+                        sr=self.target_sample_rate,
+                        mono=True
+                    )
+                
+            except Exception as e:
+                logger.warning(f"Direct librosa loading failed: {e}, using fallback method")
+                # Fallback: save to temp file and process
+                temp_path = self.create_temp_file(suffix=file_ext)
+                with open(temp_path, 'wb') as f:
+                    f.write(uploaded_file.getvalue())
+                audio_data, original_sr, duration = self.load_and_preprocess_audio(temp_path)
+                self.safe_delete(temp_path)
+                return audio_data, original_sr, duration
             
             # Validate duration
             duration = self.validate_audio_duration(audio_data, original_sr, uploaded_file.name)
@@ -240,7 +242,16 @@ class AudioProcessor:
             
         except Exception as e:
             logger.error(f"Direct processing failed: {e}")
-            raise Exception(f"Could not process uploaded file: {str(e)}")
+            # Final fallback: use temporary file method
+            try:
+                temp_path = self.create_temp_file(suffix='.audio')
+                with open(temp_path, 'wb') as f:
+                    f.write(uploaded_file.getvalue())
+                audio_data, sample_rate, duration = self.load_and_preprocess_audio(temp_path)
+                self.safe_delete(temp_path)
+                return audio_data, sample_rate, duration
+            except Exception as fallback_error:
+                raise Exception(f"Could not process uploaded file: {str(e)}")
     
     def preprocess_audio(self, audio_data, original_sr):
         """Preprocess audio: resample to 16kHz, convert to mono, noise suppression"""
@@ -562,7 +573,7 @@ def get_audio_info(file_path_or_uploaded_file):
                     'message': f"Unsupported audio format. Supported: {supported}"
                 }
             
-            # Use direct processing for better accuracy
+            # Use direct processing
             try:
                 audio_data, sample_rate, duration = processor.process_uploaded_file_directly(uploaded_file)
                 
@@ -577,6 +588,7 @@ def get_audio_info(file_path_or_uploaded_file):
                 return info
                 
             except Exception as e:
+                logger.warning(f"Direct processing failed, using fallback: {e}")
                 # Fallback to temporary file method
                 file_extension = os.path.splitext(uploaded_file.name)[1].lower()
                 temp_path = processor.create_temp_file(suffix=file_extension)
@@ -663,7 +675,6 @@ class MockWhisperTranscriber:
         try:
             # Analyze audio characteristics
             energy = np.mean(audio_data ** 2)
-            zero_crossing_rate = np.mean(librosa.feature.zero_crossing_rate(audio_data))
             
             # Simple content-based transcription
             if energy > 0.01:  # High energy - likely urgent content
