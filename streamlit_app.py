@@ -335,15 +335,15 @@ def show_quick_analysis_interface(audio_processor, transcriber, model_predictor)
         show_recording_interface(audio_processor, transcriber, model_predictor)
 
 def show_upload_interface(audio_processor, transcriber, model_predictor):
-    """Show upload interface"""
+    """Show upload interface with 15-second minimum requirement"""
     uploaded_file = st.file_uploader(
-        "Choose an audio file", 
+        "Choose an audio file (15 seconds minimum)", 
         type=['wav', 'mp3', 'm4a', 'flac', 'ogg', 'aac', 'webm'],
-        help="Upload audio files up to 25MB"
+        help="Upload audio files: minimum 15 seconds, maximum 5 minutes"
     )
     
     if uploaded_file is not None:
-        # Create temporary file for preview
+        # Create temporary file for preview and validation
         temp_file_path = None
         try:
             temp_file_path = audio_processor.create_temp_file(
@@ -355,16 +355,26 @@ def show_upload_interface(audio_processor, transcriber, model_predictor):
             # Display audio player
             st.audio(temp_file_path, format='audio/wav')
             
-            # Show file info
+            # Show file info with duration validation
             audio_info = get_audio_info(temp_file_path)
             if audio_info['valid']:
-                st.info(f"📊 File Info: {audio_info['message']}")
-                
+                duration = audio_info['duration']
+                if duration < 15.0:
+                    st.error(f"❌ File too short: {duration:.1f}s. Minimum 15 seconds required.")
+                elif duration > 300.0:
+                    st.error(f"❌ File too long: {duration:.1f}s. Maximum 5 minutes allowed.")
+                else:
+                    st.success(f"✅ {audio_info['message']}")
+                    
         finally:
             if temp_file_path:
                 safe_delete_file(temp_file_path)
         
-        if st.button("Analyze Audio", type="primary", key="analyze_upload"):
+        # Only enable analysis if duration is valid
+        audio_info = get_audio_info(uploaded_file)
+        can_analyze = audio_info['valid'] and 15.0 <= audio_info.get('duration', 0) <= 800.0
+        
+        if st.button("Analyze Audio", type="primary", key="analyze_upload", disabled=not can_analyze):
             with st.spinner("🔍 Processing audio..."):
                 result = process_uploaded_file(uploaded_file, transcriber, model_predictor, audio_processor)
                 if result['success']:
@@ -381,64 +391,75 @@ def show_upload_interface(audio_processor, transcriber, model_predictor):
 
 
 def show_recording_interface(audio_processor, transcriber, model_predictor):
-    """Show recording interface using Streamlit's native audio input"""
+    """Show recording interface with 15-second minimum requirement"""
     st.info("""
     **Recording Instructions:**
     - Click the microphone button below to record
+    - **Minimum 15 seconds required** for accurate analysis
+    - Maximum 5 minutes allowed
     - Ensure you're in a quiet environment
     - Speak clearly and describe symptoms in detail
-    - Recommended duration: 10-30 seconds
     - After recording, click 'Analyze Recording' to process
     """)
     
-    # Use Streamlit's native audio input - this works on Streamlit Cloud
-    audio_bytes = st.audio_input("Click the microphone to record audio", key="audio_recorder")
+    # Use Streamlit's native audio input
+    audio_bytes = st.audio_input("Click the microphone to record audio (15s minimum)", key="audio_recorder")
     
     if audio_bytes is not None:
         # Show the recorded audio
         st.audio(audio_bytes, format="audio/wav")
-        st.success("✅ Recording completed! Click 'Analyze Recording' below.")
         
-        if st.button("Analyze Recording", type="primary", key="analyze_record"):
-            with st.spinner("🔍 Processing recording..."):
-                try:
-                    # Save temporary file - handle both bytes and UploadedFile
-                    temp_path = audio_processor.create_temp_file(suffix='.wav')
+        # Check duration using temporary file
+        temp_path = None
+        try:
+            temp_path = audio_processor.create_temp_file(suffix='.wav')
+            with open(temp_path, 'wb') as f:
+                f.write(audio_bytes)
+            
+            audio_info = get_audio_info(temp_path)
+            
+            if audio_info['valid']:
+                duration = audio_info['duration']
+                if duration < 15.0:
+                    st.error(f"❌ Recording too short: {duration:.1f}s. Minimum 15 seconds required.")
+                else:
+                    st.success(f"✅ Recording completed! Duration: {duration:.1f}s. Click 'Analyze Recording' below.")
                     
-                    # Handle the audio data properly
-                    if hasattr(audio_bytes, 'read'):  # It's a file-like object
-                        with open(temp_path, 'wb') as f:
-                            f.write(audio_bytes.read())
-                    else:  # It's already bytes
-                        with open(temp_path, 'wb') as f:
-                            f.write(audio_bytes)
-                    
-                    # Process the recording using the existing function
-                    result = process_recorded_audio(
-                        temp_path, 
-                        transcriber, 
-                        model_predictor
-                    )
-                    
-                    if result['success']:
-                        st.session_state.current_analysis_result = result
-                        st.session_state.analysis_complete = True
-                        
-                        # Send email if high urgency
-                        if result['urgency_level'] == "High":
-                            send_doctor_alert(result)
-                        
-                        # Clean up
-                        safe_delete_file(temp_path)
-                        
-                        st.rerun()
-                    else:
-                        st.error(f"❌ Analysis failed: {result['error']}")
-                        
-                except Exception as e:
-                    st.error(f"❌ Processing error: {e}")
+                    if st.button("Analyze Recording", type="primary", key="analyze_record"):
+                        with st.spinner("🔍 Processing recording..."):
+                            try:
+                                # Process the recording
+                                result = process_recorded_audio(
+                                    temp_path, 
+                                    transcriber, 
+                                    model_predictor
+                                )
+                                
+                                if result['success']:
+                                    st.session_state.current_analysis_result = result
+                                    st.session_state.analysis_complete = True
+                                    
+                                    # Send email if high urgency
+                                    if result['urgency_level'] == "High":
+                                        send_doctor_alert(result)
+                                    
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Analysis failed: {result['error']}")
+                                    
+                            except Exception as e:
+                                st.error(f"❌ Processing error: {e}")
+            else:
+                st.error(f"❌ {audio_info['message']}")
+                
+        except Exception as e:
+            st.error(f"❌ Error checking recording: {e}")
+        finally:
+            # Clean up
+            if temp_path:
+                safe_delete_file(temp_path)
     else:
-        st.info("🎤 Click the microphone button above to start recording")
+        st.info("🎤 Click the microphone button above to start recording (15s minimum)")
 
 def send_doctor_alert(analysis_result):
     """Send email alert to doctor for high urgency cases"""
