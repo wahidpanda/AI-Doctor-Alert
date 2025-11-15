@@ -8,7 +8,7 @@
 
 ## An intelligent medical urgency analysis system that processes audio recordings, transcribes medical conversations, analyzes urgency levels, and automatically alerts doctors for critical cases using AI-powered classification.
 
-### LIVEWEBAPP: https://ai-doctor-alert.streamlit.app/ 
+### LIVE WEBAPP: https://ai-doctor-alert.streamlit.app/ 
 ## USE UNSEEN DATA FOR TEST: https://drive.google.com/drive/u/0/folders/1D1P_YHrL4kxMkw7kaZ06D50hWoJy0_rg
 
 ## Screen Shots:
