@@ -379,39 +379,39 @@ class WhisperTranscriber:
             logger.error(f"Audio array transcription failed: {e}")
             raise Exception(f"Audio processing failed: {e}")
     
-def transcribe_uploaded_file(self, uploaded_file):
-    """Transcribe uploaded file - handles any format and sample rate"""
-    input_path = None
-    
-    try:
-        logger.info(f"Transcribing uploaded file: {uploaded_file.name}")
+    def transcribe_uploaded_file(self, uploaded_file):
+        """Transcribe uploaded file - handles any format and sample rate"""
+        input_path = None
         
-        # Check if format is supported
-        if not self.audio_processor.is_supported_format(uploaded_file):
-            supported = ', '.join(self.audio_processor.supported_formats)
-            file_ext = os.path.splitext(uploaded_file.name)[1]
-            raise Exception(f"Unsupported audio format '{file_ext}'. Supported: {supported}")
-        
-        # Create temporary input file
-        file_extension = os.path.splitext(uploaded_file.name)[1].lower()
-        input_path = self.audio_processor.create_temp_file(suffix=file_extension)
-        
-        # Save uploaded file
-        with open(input_path, 'wb') as f:
-            f.write(uploaded_file.getvalue())
-        
-        # Transcribe the file and get duration
-        transcription, duration = self.transcribe_audio(input_path)
-        
-        return transcription, duration
-        
-    except Exception as e:
-        logger.error(f"Uploaded file transcription failed: {e}")
-        raise
-    finally:
-        # Clean up temporary files
-        if input_path:
-            self.audio_processor.safe_delete(input_path)
+        try:
+            logger.info(f"Transcribing uploaded file: {uploaded_file.name}")
+            
+            # Check if format is supported
+            if not self.audio_processor.is_supported_format(uploaded_file):
+                supported = ', '.join(self.audio_processor.supported_formats)
+                file_ext = os.path.splitext(uploaded_file.name)[1]
+                raise Exception(f"Unsupported audio format '{file_ext}'. Supported: {supported}")
+            
+            # Create temporary input file
+            file_extension = os.path.splitext(uploaded_file.name)[1].lower()
+            input_path = self.audio_processor.create_temp_file(suffix=file_extension)
+            
+            # Save uploaded file
+            with open(input_path, 'wb') as f:
+                f.write(uploaded_file.getvalue())
+            
+            # Transcribe the file and get duration
+            transcription, duration = self.transcribe_audio(input_path)
+            
+            return transcription, duration
+            
+        except Exception as e:
+            logger.error(f"Uploaded file transcription failed: {e}")
+            raise
+        finally:
+            # Clean up temporary files
+            if input_path:
+                self.audio_processor.safe_delete(input_path)
 
 
 # Updated Audio info function that handles both file paths and UploadedFile objects
