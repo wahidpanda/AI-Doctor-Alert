@@ -11,6 +11,13 @@
 ### LIVEWEBAPP: https://ai-doctor-alert.streamlit.app/ 
 ## USE UNSEEN DATA FOR TEST: https://drive.google.com/drive/u/0/folders/1D1P_YHrL4kxMkw7kaZ06D50hWoJy0_rg
 
+## Screen Shots:
+
+<img width="1920" height="837" alt="image" src="https://github.com/user-attachments/assets/5d108d67-955d-427b-8088-2e738d39e317" />
+<img width="1482" height="880" alt="image" src="https://github.com/user-attachments/assets/fad6bb5d-7945-4222-b1e6-06623f71c0f4" />
+<img width="1890" height="888" alt="image" src="https://github.com/user-attachments/assets/8400e721-4da0-415b-8782-41ec8a8c85fd" />
+
+
 ## 📋 Table of Contents
 
 1. Overview
