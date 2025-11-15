@@ -97,41 +97,6 @@ class AudioProcessor:
         logger.info(f"✅ Audio duration valid: {duration:.2f}s")
         return duration
     
-    def convert_to_wav_using_librosa(self, input_path, output_path):
-        """Convert audio to WAV using librosa (works for most formats)"""
-        try:
-            logger.info(f"Converting {input_path} to WAV using librosa")
-            
-            # Load audio with librosa
-            audio_data, sr = librosa.load(input_path, sr=None, mono=True)
-            
-            # Validate duration before processing
-            self.validate_audio_duration(audio_data, sr, os.path.basename(input_path))
-            
-            # Resample to 16kHz if needed
-            if sr != self.target_sample_rate:
-                if HAS_RESAMPY:
-                    audio_data = resampy.resample(audio_data, sr, self.target_sample_rate)
-                else:
-                    num_samples = int(len(audio_data) * self.target_sample_rate / sr)
-                    audio_data = signal.resample(audio_data, num_samples)
-            
-            # Save as WAV
-            audio_data_int16 = np.int16(audio_data * 32767)
-            
-            with wave.open(output_path, 'wb') as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(self.target_sample_rate)
-                wf.writeframes(audio_data_int16.tobytes())
-            
-            logger.info(f"✅ Successfully converted to WAV: {output_path}")
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Librosa conversion failed: {e}")
-            raise Exception(f"Could not process audio file: {str(e)}")
-    
     def load_and_preprocess_audio(self, file_path):
         """Load audio file and preprocess to 16kHz mono - supports all formats"""
         try:
@@ -329,6 +294,7 @@ class WhisperTranscriber:
             # Process with Whisper
             transcription = self._transcribe_audio_array(audio_data, sample_rate)
             
+            # RETURN EXACTLY 2 VALUES
             return transcription, duration
             
         except Exception as e:
@@ -352,6 +318,7 @@ class WhisperTranscriber:
             # Process with Whisper
             transcription = self._transcribe_audio_array(audio_data, sample_rate)
             
+            # RETURN EXACTLY 2 VALUES
             return transcription, duration
             
         except Exception as e:
@@ -493,11 +460,10 @@ class MockWhisperTranscriber:
     """Simple mock transcriber for demo purposes"""
     def __init__(self, model_size="base"):
         self.model_size = model_size
-        self.audio_processor = AudioProcessor()
         logger.info(f"MockWhisperTranscriber initialized with model: {model_size}")
     
     def transcribe_audio(self, audio_file_path):
-        """Mock transcription"""
+        """Mock transcription - RETURNS EXACTLY 2 VALUES"""
         import random
         mock_transcriptions = [
             "Patient reports chest pain and difficulty breathing, needs immediate medical attention.",
@@ -507,11 +473,14 @@ class MockWhisperTranscriber:
             "Patient with minor cut and bruise, basic first aid sufficient."
         ]
         duration = 30.0
-        return random.choice(mock_transcriptions), duration
+        transcription = random.choice(mock_transcriptions)
+        # RETURN EXACTLY 2 VALUES
+        return transcription, duration
     
     def transcribe_uploaded_file(self, uploaded_file):
-        """Mock transcription for uploaded files - FIXED: returns exactly 2 values"""
+        """Mock transcription for uploaded files - RETURNS EXACTLY 2 VALUES"""
         transcription, duration = self.transcribe_audio("mock_file.wav")
+        # RETURN EXACTLY 2 VALUES
         return transcription, duration
 
 
