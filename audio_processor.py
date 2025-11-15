@@ -7,6 +7,7 @@ import tempfile
 import os
 import logging
 import atexit
+from pydub import AudioSegment
 import streamlit as st
 
 # Set up logging
@@ -17,29 +18,13 @@ logger = logging.getLogger(__name__)
 import warnings
 warnings.filterwarnings("ignore")
 
-# Try to import resampy
-try:
-    import resampy
-    HAS_RESAMPY = True
-    logger.info("resampy available for audio resampling")
-except ImportError:
-    HAS_RESAMPY = False
-    logger.warning("resampy not available, using scipy for resampling")
-
 class AudioProcessor:
     def __init__(self):
         self.target_sample_rate = 16000  # Whisper requires 16kHz
         self.channels = 1
-        self.min_duration = 15.0  # Minimum 15 seconds required
-        self.max_duration = 300.0  # Maximum 5 minutes
         self.temp_files = []  # Track temporary files for cleanup
         atexit.register(self.cleanup_temp_files)
-        
-        # Supported audio formats - librosa supports most of these
-        self.supported_formats = {
-            '.wav', '.mp3', '.m4a', '.flac', '.ogg', '.aac'
-        }
-        logger.info("AudioProcessor initialized with 15s minimum duration")
+        logger.info("AudioProcessor initialized")
     
     def cleanup_temp_files(self):
         """Clean up any remaining temporary files"""
@@ -68,168 +53,69 @@ class AudioProcessor:
                 return True
         except Exception as e:
             logger.warning(f"Could not delete {file_path}: {e}")
+            # Don't remove from temp_files list so we can try again later
             return False
         return False
-    
-    def is_supported_format(self, file_path_or_name):
-        """Check if the file format is supported"""
-        if hasattr(file_path_or_name, 'name'):
-            # It's an UploadedFile object
-            file_ext = os.path.splitext(file_path_or_name.name)[1].lower()
-        else:
-            # It's a file path string
-            file_ext = os.path.splitext(file_path_or_name)[1].lower()
         
-        return file_ext in self.supported_formats
-    
-    def validate_audio_duration(self, audio_data, sample_rate, source_name="audio"):
-        """Validate that audio meets duration requirements"""
-        duration = len(audio_data) / sample_rate
-        
-        logger.info(f"Validating {source_name}: {duration:.2f}s")
-        
-        if duration < self.min_duration:
-            raise Exception(f"Audio too short: {duration:.1f}s. Minimum required: {self.min_duration}s")
-        
-        if duration > self.max_duration:
-            raise Exception(f"Audio too long: {duration:.1f}s. Maximum allowed: {self.max_duration}s")
-        
-        logger.info(f"✅ Audio duration valid: {duration:.2f}s")
-        return duration
-    
-    def convert_to_wav_using_librosa(self, input_path, output_path):
-        """Convert audio to WAV using librosa (works for most formats)"""
+    def record_audio(self, duration=10, sample_rate=16000):
+        """Record audio using Streamlit's native audio input"""
         try:
-            logger.info(f"Converting {input_path} to WAV using librosa")
+            logger.info(f"Waiting for audio recording...")
             
-            # Load audio with librosa
-            audio_data, sr = librosa.load(input_path, sr=None, mono=True)
+            # Use Streamlit's built-in audio recorder
+            st.info("🎤 Click the microphone button below to start recording...")
+            audio_bytes = st.audio_input("Speak now...", key=f"recorder_{duration}")
             
-            # Validate duration before processing
-            self.validate_audio_duration(audio_data, sr, os.path.basename(input_path))
+            if audio_bytes:
+                logger.info("Audio recording received")
+                
+                # Convert bytes to AudioSegment
+                audio = AudioSegment.from_file(io.BytesIO(audio_bytes))
+                
+                # Convert to numpy array
+                samples = np.array(audio.get_array_of_samples())
+                
+                # Convert to float32 for processing
+                samples = samples.astype(np.float32) / 32768.0  # Normalize to [-1, 1]
+                
+                logger.info(f"Recording finished: {len(samples)} samples, {audio.frame_rate}Hz")
+                return samples, audio.frame_rate
+            else:
+                logger.warning("No audio recorded - user didn't record anything")
+                return None, sample_rate
             
-            # Resample to 16kHz if needed
-            if sr != self.target_sample_rate:
-                if HAS_RESAMPY:
-                    audio_data = resampy.resample(audio_data, sr, self.target_sample_rate)
-                else:
-                    num_samples = int(len(audio_data) * self.target_sample_rate / sr)
-                    audio_data = signal.resample(audio_data, num_samples)
+        except Exception as e:
+            logger.error(f"Recording failed: {e}")
+            st.error(f"Audio recording failed: {e}")
+            return None, sample_rate
+    
+    def save_audio_file(self, audio_data, file_path):
+        """Save audio data to WAV file at 16kHz - FIXED to handle None"""
+        try:
+            logger.info(f"Saving audio to {file_path}")
             
-            # Save as WAV
+            # Check if audio_data is None
+            if audio_data is None:
+                raise Exception("No audio data to save - recording failed or no audio recorded")
+                
+            if len(audio_data) == 0:
+                raise Exception("Empty audio data")
+                
+            # Ensure audio data is properly scaled for 16-bit PCM
             audio_data_int16 = np.int16(audio_data * 32767)
             
-            with wave.open(output_path, 'wb') as wf:
-                wf.setnchannels(1)
+            with wave.open(file_path, 'wb') as wf:
+                wf.setnchannels(self.channels)
                 wf.setsampwidth(2)
                 wf.setframerate(self.target_sample_rate)
                 wf.writeframes(audio_data_int16.tobytes())
             
-            logger.info(f"✅ Successfully converted to WAV: {output_path}")
-            return output_path
+            logger.info(f"Audio saved successfully to {file_path} at {self.target_sample_rate}Hz")
+            return True
             
         except Exception as e:
-            logger.error(f"Librosa conversion failed: {e}")
-            raise Exception(f"Could not process audio file: {str(e)}")
-    
-    def load_and_preprocess_audio(self, file_path):
-        """Load audio file and preprocess to 16kHz mono - supports all formats"""
-        try:
-            logger.info(f"Loading and preprocessing audio file: {file_path}")
-            
-            # Check file extension
-            file_ext = os.path.splitext(file_path)[1].lower()
-            
-            if file_ext != '.wav':
-                # Convert non-WAV files to WAV first
-                logger.info(f"Converting {file_ext} file to WAV format")
-                wav_temp_path = self.create_temp_file(suffix='.wav')
-                self.convert_to_wav_using_librosa(file_path, wav_temp_path)
-                
-                # Load the converted WAV file
-                audio_data, original_sr = librosa.load(
-                    wav_temp_path, 
-                    sr=self.target_sample_rate,
-                    mono=True
-                )
-                
-                # Clean up temporary WAV file
-                self.safe_delete(wav_temp_path)
-            else:
-                # Directly load WAV files
-                audio_data, original_sr = librosa.load(
-                    file_path, 
-                    sr=self.target_sample_rate,
-                    mono=True
-                )
-            
-            # Validate duration after loading
-            duration = self.validate_audio_duration(audio_data, original_sr, os.path.basename(file_path))
-            
-            logger.info(f"Loaded audio: {len(audio_data)} samples, {original_sr}Hz, {duration:.2f}s")
-            
-            # Apply additional preprocessing
-            processed_audio = self.preprocess_audio(audio_data, original_sr)
-            
-            logger.info(f"Processed audio: {len(processed_audio)} samples, {self.target_sample_rate}Hz")
-            return processed_audio, self.target_sample_rate, duration
-            
-        except Exception as e:
-            logger.error(f"Error loading audio file {file_path}: {e}")
-            raise Exception(f"Error loading audio file: {e}")
-    
-    def process_uploaded_file_directly(self, uploaded_file):
-        """Process uploaded file directly using only librosa - NO PYDUB"""
-        try:
-            logger.info(f"Processing uploaded file directly: {uploaded_file.name}")
-            
-            # Get file extension
-            file_ext = os.path.splitext(uploaded_file.name)[1].lower()
-            
-            # For ALL formats, use librosa directly from bytes
-            try:
-                # Load audio directly from bytes using librosa
-                audio_data, original_sr = librosa.load(
-                    io.BytesIO(uploaded_file.getvalue()),
-                    sr=self.target_sample_rate,  # Resample to 16kHz during load
-                    mono=True                    # Convert to mono
-                )
-                
-                logger.info(f"Direct librosa loading successful: {len(audio_data)} samples, {original_sr}Hz")
-                
-            except Exception as e:
-                logger.warning(f"Direct librosa loading failed: {e}, using fallback method")
-                # Fallback: save to temp file and process
-                temp_path = self.create_temp_file(suffix=file_ext)
-                with open(temp_path, 'wb') as f:
-                    f.write(uploaded_file.getvalue())
-                audio_data, original_sr, duration = self.load_and_preprocess_audio(temp_path)
-                self.safe_delete(temp_path)
-                return audio_data, original_sr, duration
-            
-            # Validate duration
-            duration = self.validate_audio_duration(audio_data, original_sr, uploaded_file.name)
-            
-            # Apply preprocessing
-            processed_audio = self.preprocess_audio(audio_data, original_sr)
-            
-            logger.info(f"Direct processing complete: {len(processed_audio)} samples, {self.target_sample_rate}Hz, {duration:.2f}s")
-            return processed_audio, self.target_sample_rate, duration
-            
-        except Exception as e:
-            logger.error(f"Direct processing failed: {e}")
-            # Final fallback: use temporary file method
-            try:
-                logger.info("Using final fallback: temporary file method")
-                temp_path = self.create_temp_file(suffix='.audio')
-                with open(temp_path, 'wb') as f:
-                    f.write(uploaded_file.getvalue())
-                audio_data, sample_rate, duration = self.load_and_preprocess_audio(temp_path)
-                self.safe_delete(temp_path)
-                return audio_data, sample_rate, duration
-            except Exception as fallback_error:
-                logger.error(f"All processing methods failed: {fallback_error}")
-                raise Exception(f"Could not process uploaded file. Please try a different audio format or ensure the file is not corrupted.")
+            logger.error(f"Error saving audio file: {e}")
+            raise Exception(f"Error saving audio file: {e}")
     
     def preprocess_audio(self, audio_data, original_sr):
         """Preprocess audio: resample to 16kHz, convert to mono, noise suppression"""
@@ -238,9 +124,9 @@ class AudioProcessor:
             if audio_data is None:
                 raise Exception("No audio data to process")
                 
-            logger.info(f"Preprocessing audio: {len(audio_data)} samples, {original_sr}Hz -> {self.target_sample_rate}Hz")
+            logger.info(f"Preprocessing audio: {original_sr}Hz -> {self.target_sample_rate}Hz")
             
-            # Convert to mono if stereo (librosa should already do this, but just in case)
+            # Convert to mono if stereo (though Streamlit audio should already be mono)
             if len(audio_data.shape) > 1:
                 audio_data = np.mean(audio_data, axis=1)
                 logger.info("Converted stereo to mono")
@@ -248,14 +134,12 @@ class AudioProcessor:
             # Always resample to 16kHz for Whisper compatibility
             if original_sr != self.target_sample_rate:
                 logger.info(f"Resampling from {original_sr}Hz to {self.target_sample_rate}Hz")
-                if HAS_RESAMPY:
-                    audio_data = resampy.resample(audio_data, original_sr, self.target_sample_rate)
-                else:
-                    num_samples = int(len(audio_data) * self.target_sample_rate / original_sr)
-                    audio_data = signal.resample(audio_data, num_samples)
-            
-            # Ensure minimum length for Whisper (at least 1 second)
-            audio_data = self.ensure_minimum_length(audio_data, self.target_sample_rate)
+                audio_data = librosa.resample(
+                    audio_data, 
+                    orig_sr=original_sr, 
+                    target_sr=self.target_sample_rate,
+                    res_type='kaiser_fast'
+                )
             
             # Simple noise reduction
             audio_data = self._noise_reduction(audio_data)
@@ -270,20 +154,6 @@ class AudioProcessor:
         except Exception as e:
             logger.error(f"Audio preprocessing failed: {e}")
             raise Exception(f"Audio preprocessing failed: {e}")
-    
-    def ensure_minimum_length(self, audio_data, sample_rate):
-        """Ensure audio meets minimum length requirement for Whisper"""
-        current_duration = len(audio_data) / sample_rate
-        
-        if current_duration < 1.0:  # Whisper's internal minimum
-            logger.info(f"Audio very short ({current_duration:.2f}s), padding to 1s")
-            target_samples = int(1.0 * sample_rate)
-            if len(audio_data) < target_samples:
-                silence_length = target_samples - len(audio_data)
-                silence = np.zeros(silence_length, dtype=audio_data.dtype)
-                audio_data = np.concatenate([audio_data, silence])
-        
-        return audio_data
     
     def _noise_reduction(self, audio_data):
         """Simple noise reduction using filtering"""
@@ -306,6 +176,49 @@ class AudioProcessor:
         if max_val > 0:
             audio_data = audio_data / max_val * 0.9
         return audio_data
+    
+    def load_and_preprocess_audio(self, file_path):
+        """Load audio file and preprocess to 16kHz mono"""
+        try:
+            logger.info(f"Loading and preprocessing audio file: {file_path}")
+            
+            # Load audio with librosa
+            audio_data, original_sr = librosa.load(
+                file_path, 
+                sr=None,
+                mono=True,
+                res_type='kaiser_fast'
+            )
+            
+            logger.info(f"Original audio: {len(audio_data)} samples, {original_sr}Hz")
+            
+            # Preprocess to 16kHz
+            processed_audio = self.preprocess_audio(audio_data, original_sr)
+            
+            logger.info(f"Processed audio: {len(processed_audio)} samples, {self.target_sample_rate}Hz")
+            return processed_audio, self.target_sample_rate
+            
+        except Exception as e:
+            logger.error(f"Error loading audio file: {e}")
+            raise Exception(f"Error loading audio file: {e}")
+    
+    def convert_audio_to_16khz(self, input_path, output_path):
+        """Convert any audio file to 16kHz WAV format"""
+        try:
+            logger.info(f"Converting {input_path} to 16kHz WAV: {output_path}")
+            
+            # Load and preprocess audio
+            audio_data, sr = self.load_and_preprocess_audio(input_path)
+            
+            # Save as 16kHz WAV
+            self.save_audio_file(audio_data, output_path)
+            
+            logger.info(f"✅ Audio converted to 16kHz: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"Audio conversion failed: {e}")
+            raise Exception(f"Audio conversion failed: {e}")
 
 
 class WhisperTranscriber:
@@ -347,49 +260,27 @@ class WhisperTranscriber:
             raise
     
     def transcribe_audio(self, audio_file_path):
-        """Transcribe audio file - automatically handles any sample rate and format"""
+        """Transcribe audio file - automatically handles any sample rate"""
         try:
             logger.info(f"Transcribing audio: {audio_file_path}")
             
-            # Check if format is supported
-            if not self.audio_processor.is_supported_format(audio_file_path):
-                supported = ', '.join(self.audio_processor.supported_formats)
-                raise Exception(f"Unsupported audio format. Supported: {supported}")
-            
             # Load and preprocess audio to 16kHz
-            audio_data, sample_rate, duration = self.audio_processor.load_and_preprocess_audio(audio_file_path)
+            audio_data, sample_rate = self.audio_processor.load_and_preprocess_audio(audio_file_path)
+            
+            # Verify sample rate is 16kHz
+            if sample_rate != 16000:
+                logger.warning(f"Sample rate is {sample_rate}Hz, expected 16000Hz. Resampling...")
+                audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=16000)
+                sample_rate = 16000
             
             # Process with Whisper
             transcription = self._transcribe_audio_array(audio_data, sample_rate)
             
-            return transcription, duration
+            return transcription
             
         except Exception as e:
             logger.error(f"Whisper transcription failed: {e}")
             raise Exception(f"Audio transcription failed: {e}")
-    
-    def transcribe_uploaded_file(self, uploaded_file):
-        """Transcribe uploaded file - handles any format and sample rate"""
-        try:
-            logger.info(f"Transcribing uploaded file: {uploaded_file.name}")
-            
-            # Check if format is supported
-            if not self.audio_processor.is_supported_format(uploaded_file):
-                supported = ', '.join(self.audio_processor.supported_formats)
-                file_ext = os.path.splitext(uploaded_file.name)[1]
-                raise Exception(f"Unsupported audio format '{file_ext}'. Supported: {supported}")
-            
-            # Process the uploaded file directly using ONLY librosa
-            audio_data, sample_rate, duration = self.audio_processor.process_uploaded_file_directly(uploaded_file)
-            
-            # Process with Whisper
-            transcription = self._transcribe_audio_array(audio_data, sample_rate)
-            
-            return transcription, duration
-            
-        except Exception as e:
-            logger.error(f"Uploaded file transcription failed: {e}")
-            raise
     
     def _transcribe_audio_array(self, audio_data, sample_rate):
         """Transcribe audio array using Whisper model"""
@@ -407,22 +298,20 @@ class WhisperTranscriber:
                 audio_data = audio_data / np.max(np.abs(audio_data))
             
             # Process audio with Whisper processor
-            input_features = self.processor.feature_extractor(
+            inputs = self.processor(
                 audio_data, 
                 sampling_rate=sample_rate, 
-                return_tensors="pt"
-            ).input_features
+                return_tensors="pt",
+                padding=True
+            )
             
             # Generate transcription
             import torch
             with torch.no_grad():
                 predicted_ids = self.model.generate(
-                    input_features,
+                    inputs.input_features,
                     language="english",
-                    task="transcribe",
-                    max_length=448,
-                    num_beams=1,
-                    temperature=0.0
+                    task="transcribe"
                 )
             
             # Decode transcription
@@ -440,151 +329,52 @@ class WhisperTranscriber:
             
         except Exception as e:
             logger.error(f"Audio array transcription failed: {e}")
-            # Try alternative approach
-            return self._transcribe_audio_array_alternative(audio_data, sample_rate)
+            raise Exception(f"Audio processing failed: {e}")
     
-    def _transcribe_audio_array_alternative(self, audio_data, sample_rate):
-        """Alternative transcription method for handling variable length audio"""
+    def transcribe_uploaded_file(self, uploaded_file):
+        """Transcribe uploaded file - handles any format and sample rate"""
+        input_path = None
+        output_path = None
+        
         try:
-            logger.info("Using alternative transcription method for variable length audio")
+            logger.info(f"Transcribing uploaded file: {uploaded_file.name}")
             
-            # Ensure audio is in the right format
-            if audio_data.dtype != np.float32:
-                audio_data = audio_data.astype(np.float32)
+            # Create temporary input file
+            file_extension = os.path.splitext(uploaded_file.name)[1].lower()
+            input_path = self.audio_processor.create_temp_file(suffix=file_extension)
             
-            # Normalize audio
-            if np.max(np.abs(audio_data)) > 0:
-                audio_data = audio_data / np.max(np.abs(audio_data))
+            with open(input_path, 'wb') as f:
+                f.write(uploaded_file.getvalue())
             
-            # Process in chunks if audio is too long
-            max_length = 30 * sample_rate  # 30 seconds max per chunk
-            if len(audio_data) > max_length:
-                logger.info(f"Audio too long ({len(audio_data)/sample_rate:.1f}s), processing in chunks")
-                return self._transcribe_long_audio(audio_data, sample_rate, max_length)
+            # Create temporary output file (16kHz WAV)
+            output_path = self.audio_processor.create_temp_file(suffix='.wav')
             
-            # Use processor with padding
-            inputs = self.processor(
-                audio_data, 
-                sampling_rate=sample_rate, 
-                return_tensors="pt",
-                padding=True
-            )
+            # Convert to 16kHz WAV first
+            self.audio_processor.convert_audio_to_16khz(input_path, output_path)
             
-            # Generate transcription with adjusted parameters
-            import torch
-            with torch.no_grad():
-                predicted_ids = self.model.generate(
-                    inputs.input_features,
-                    language="english",
-                    task="transcribe",
-                    max_length=448,
-                    num_beams=1,
-                    temperature=0.0
-                )
+            # Transcribe the converted file
+            transcription = self.transcribe_audio(output_path)
             
-            # Decode transcription
-            transcription = self.processor.batch_decode(
-                predicted_ids, 
-                skip_special_tokens=True
-            )[0].strip()
-            
-            if not transcription:
-                return "No speech detected. Please ensure clear audio recording."
-            
-            logger.info(f"✅ Alternative transcription successful: {len(transcription)} characters")
             return transcription
             
         except Exception as e:
-            logger.error(f"Alternative transcription also failed: {e}")
-            raise Exception(f"Audio processing failed: {e}")
-    
-    def _transcribe_long_audio(self, audio_data, sample_rate, chunk_size):
-        """Transcribe long audio by processing in chunks"""
-        try:
-            transcriptions = []
-            total_samples = len(audio_data)
-            
-            for start in range(0, total_samples, chunk_size):
-                end = min(start + chunk_size, total_samples)
-                chunk = audio_data[start:end]
-                
-                # Ensure chunk is not too short
-                if len(chunk) < 0.5 * sample_rate:  # Less than 0.5 seconds
-                    continue
-                
-                # Transcribe chunk
-                chunk_transcription = self._transcribe_audio_array_alternative(chunk, sample_rate)
-                if chunk_transcription and chunk_transcription != "No speech detected.":
-                    transcriptions.append(chunk_transcription)
-            
-            # Combine transcriptions
-            if transcriptions:
-                full_transcription = " ".join(transcriptions)
-                logger.info(f"Long audio transcription completed: {len(full_transcription)} characters")
-                return full_transcription
-            else:
-                return "No speech detected in the recording."
-                
-        except Exception as e:
-            logger.error(f"Long audio transcription failed: {e}")
-            return "Error processing long audio recording."
+            logger.error(f"Uploaded file transcription failed: {e}")
+            raise
+        finally:
+            # Clean up temporary files
+            if input_path:
+                self.audio_processor.safe_delete(input_path)
+            if output_path:
+                self.audio_processor.safe_delete(output_path)
 
 
-# Audio info function that handles both file paths and UploadedFile objects
-def get_audio_info(file_path_or_uploaded_file):
-    """Get information about audio file - supports both file paths and UploadedFile objects"""
-    temp_path = None
-    processor = None
+# Audio info function
+def get_audio_info(file_path):
+    """Get information about audio file"""
     try:
         processor = AudioProcessor()
-        
-        # Handle both file paths and UploadedFile objects
-        if hasattr(file_path_or_uploaded_file, 'name'):
-            # It's an UploadedFile object
-            uploaded_file = file_path_or_uploaded_file
-            
-            # Check if format is supported
-            if not processor.is_supported_format(uploaded_file):
-                supported = ', '.join(processor.supported_formats)
-                return {
-                    'valid': False,
-                    'message': f"Unsupported audio format. Supported: {supported}"
-                }
-            
-            # Use direct processing with librosa only
-            try:
-                audio_data, sample_rate, duration = processor.process_uploaded_file_directly(uploaded_file)
-                
-                info = {
-                    'valid': True,
-                    'duration': duration,
-                    'sample_rate': sample_rate,
-                    'channels': 1,
-                    'samples': len(audio_data),
-                    'message': f"Valid audio: {duration:.2f}s, {sample_rate}Hz"
-                }
-                return info
-                
-            except Exception as e:
-                logger.warning(f"Direct processing failed: {e}")
-                return {
-                    'valid': False,
-                    'message': f"Could not process audio file: {str(e)}"
-                }
-        else:
-            # It's a file path string
-            file_to_process = file_path_or_uploaded_file
-            
-            # Check if format is supported
-            if not processor.is_supported_format(file_to_process):
-                supported = ', '.join(processor.supported_formats)
-                return {
-                    'valid': False,
-                    'message': f"Unsupported audio format. Supported: {supported}"
-                }
-        
-        # Load and process the audio file
-        audio_data, sample_rate, duration = processor.load_and_preprocess_audio(file_to_process)
+        audio_data, sample_rate = processor.load_and_preprocess_audio(file_path)
+        duration = len(audio_data) / sample_rate
         
         info = {
             'valid': True,
@@ -601,102 +391,3 @@ def get_audio_info(file_path_or_uploaded_file):
             'valid': False,
             'message': f"Invalid audio file: {str(e)}"
         }
-    finally:
-        # Clean up temporary file if we created one
-        if temp_path and processor:
-            processor.safe_delete(temp_path)
-
-
-# Enhanced Mock Transcriber that analyzes content
-class MockWhisperTranscriber:
-    """Mock transcriber that actually analyzes content for demo purposes"""
-    def __init__(self, model_size="base"):
-        self.model_size = model_size
-        self.audio_processor = AudioProcessor()
-        logger.info(f"MockWhisperTranscriber initialized with model: {model_size}")
-    
-    def transcribe_audio(self, audio_file_path):
-        """Analyze actual audio content for more accurate mock transcription"""
-        try:
-            # Load and analyze the actual audio file
-            audio_data, sample_rate, duration = self.audio_processor.load_and_preprocess_audio(audio_file_path)
-            
-            # Generate transcription based on audio characteristics
-            transcription = self._analyze_audio_content(audio_data, duration)
-            return transcription, duration
-            
-        except Exception as e:
-            logger.error(f"Mock transcription failed: {e}")
-            # Fallback to basic mock
-            return self._basic_mock_transcription(), 30.0
-    
-    def transcribe_uploaded_file(self, uploaded_file):
-        """Transcribe uploaded files with content analysis"""
-        try:
-            # Process the uploaded file
-            audio_data, sample_rate, duration = self.audio_processor.process_uploaded_file_directly(uploaded_file)
-            
-            # Generate transcription based on audio characteristics
-            transcription = self._analyze_audio_content(audio_data, duration)
-            return transcription, duration
-            
-        except Exception as e:
-            logger.error(f"Mock uploaded file transcription failed: {e}")
-            return self._basic_mock_transcription(), 30.0
-    
-    def _analyze_audio_content(self, audio_data, duration):
-        """Analyze audio content to generate more realistic transcriptions"""
-        try:
-            # Analyze audio characteristics
-            energy = np.mean(audio_data ** 2)
-            
-            # Simple content-based transcription
-            if energy > 0.01:  # High energy - likely urgent content
-                if duration > 20:  # Longer recording with high energy
-                    return "Patient reports severe chest pain and difficulty breathing, experiencing heart attack symptoms. Requires immediate emergency medical attention."
-                else:
-                    return "Severe pain, emergency, need help now!"
-            elif energy > 0.001:  # Medium energy
-                return "Patient has fever, headache, and body aches. Moderate symptoms requiring medical evaluation within 24 hours."
-            else:  # Low energy - likely mild symptoms or poor recording
-                return "Patient reports mild cold symptoms, seasonal allergies. Routine care and rest recommended."
-                
-        except Exception as e:
-            logger.error(f"Audio content analysis failed: {e}")
-            return self._basic_mock_transcription()
-    
-    def _basic_mock_transcription(self):
-        """Basic mock transcription as fallback"""
-        import random
-        mock_transcriptions = [
-            "Patient reports chest pain and difficulty breathing, needs immediate medical attention.",
-            "Patient has fever, headache, and mild cough, moderate symptoms observed.",
-            "Patient reports seasonal allergies with runny nose and sneezing, routine care recommended.",
-            "Patient experiencing severe abdominal pain and nausea, requires urgent evaluation.",
-            "Patient with minor cut and bruise, basic first aid sufficient."
-        ]
-        return random.choice(mock_transcriptions)
-
-
-# Function to create transcriber with fallback
-def create_transcriber(model_size="base"):
-    """Create transcriber with fallback to mock version"""
-    try:
-        # Try to create real transcriber
-        transcriber = WhisperTranscriber(model_size)
-        logger.info("✅ Real WhisperTranscriber created successfully")
-        return transcriber
-    except Exception as e:
-        logger.warning(f"❌ Failed to create real WhisperTranscriber: {e}")
-        logger.info("🔄 Falling back to Enhanced MockWhisperTranscriber")
-        return MockWhisperTranscriber(model_size)
-
-
-if __name__ == "__main__":
-    # Test the audio processor
-    processor = AudioProcessor()
-    print("✅ AudioProcessor initialized successfully")
-    
-    # Test transcriber creation
-    transcriber = create_transcriber("base")
-    print(f"✅ Transcriber created: {type(transcriber).__name__}")
