@@ -343,37 +343,28 @@ def show_upload_interface(audio_processor, transcriber, model_predictor):
     )
     
     if uploaded_file is not None:
-        # Create temporary file for preview and validation
-        temp_file_path = None
-        try:
-            temp_file_path = audio_processor.create_temp_file(
-                suffix=os.path.splitext(uploaded_file.name)[1]
-            )
-            with open(temp_file_path, 'wb') as f:
-                f.write(uploaded_file.getvalue())
-            
-            # Display audio player
-            st.audio(temp_file_path, format='audio/wav')
-            
-            # Show file info with duration validation
-            audio_info = get_audio_info(temp_file_path)
-            if audio_info['valid']:
-                duration = audio_info['duration']
-                if duration < 15.0:
-                    st.error(f"❌ File too short: {duration:.1f}s. Minimum 15 seconds required.")
-                elif duration > 300.0:
-                    st.error(f"❌ File too long: {duration:.1f}s. Maximum 5 minutes allowed.")
-                else:
-                    st.success(f"✅ {audio_info['message']}")
-                    
-        finally:
-            if temp_file_path:
-                safe_delete_file(temp_file_path)
+        # Display audio player directly from uploaded file
+        st.audio(uploaded_file, format='audio/wav')
+        
+        # Show file info with duration validation
+        audio_info = get_audio_info(uploaded_file)
+        
+        if audio_info['valid']:
+            duration = audio_info['duration']
+            if duration < 15.0:
+                st.error(f"❌ File too short: {duration:.1f}s. Minimum 15 seconds required.")
+                can_analyze = False
+            elif duration > 300.0:
+                st.error(f"❌ File too long: {duration:.1f}s. Maximum 5 minutes allowed.")
+                can_analyze = False
+            else:
+                st.success(f"✅ {audio_info['message']}")
+                can_analyze = True
+        else:
+            st.error(f"❌ {audio_info['message']}")
+            can_analyze = False
         
         # Only enable analysis if duration is valid
-        audio_info = get_audio_info(uploaded_file)
-        can_analyze = audio_info['valid'] and 15.0 <= audio_info.get('duration', 0) <= 800.0
-        
         if st.button("Analyze Audio", type="primary", key="analyze_upload", disabled=not can_analyze):
             with st.spinner("🔍 Processing audio..."):
                 result = process_uploaded_file(uploaded_file, transcriber, model_predictor, audio_processor)
