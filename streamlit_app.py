@@ -352,7 +352,7 @@ def load_ai_components():
         
         # Use mock predictor for demo
         model_predictor = MockMedicalPredictor()
-        st.success("✅ AI Components loaded successfully (Demo Mode)")
+        
         
         return audio_processor, transcriber, model_predictor
         
@@ -599,7 +599,7 @@ def show_recording_interface(audio_processor, transcriber, model_predictor):
     st.info("""
     **Recording Instructions:**
     - Click the microphone button below to record
-    - **Minimum 15 seconds required** for accurate analysis
+    - **Minimum 30 seconds required** for accurate analysis
     - Maximum 5 minutes allowed
     - Ensure you're in a quiet environment
     - Speak clearly and describe symptoms in detail
