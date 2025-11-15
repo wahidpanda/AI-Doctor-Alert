@@ -374,21 +374,19 @@ class WhisperTranscriber:
             if np.max(np.abs(audio_data)) > 0:
                 audio_data = audio_data / np.max(np.abs(audio_data))
             
-            # Process audio with Whisper processor
-            inputs = self.processor(
+            # Process audio with Whisper processor - FIXED VERSION
+            # Use the feature extractor directly to handle variable length audio
+            input_features = self.processor.feature_extractor(
                 audio_data, 
                 sampling_rate=sample_rate, 
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=480000
-            )
+                return_tensors="pt"
+            ).input_features
             
             # Generate transcription
             import torch
             with torch.no_grad():
                 predicted_ids = self.model.generate(
-                    inputs.input_features,
+                    input_features,
                     language="english",
                     task="transcribe",
                     max_length=448,
@@ -411,6 +409,57 @@ class WhisperTranscriber:
             
         except Exception as e:
             logger.error(f"Audio array transcription failed: {e}")
+            # Try alternative approach
+            return self._transcribe_audio_array_alternative(audio_data, sample_rate)
+    
+    def _transcribe_audio_array_alternative(self, audio_data, sample_rate):
+        """Alternative transcription method for handling variable length audio"""
+        try:
+            logger.info("Using alternative transcription method for variable length audio")
+            
+            # Ensure audio is in the right format
+            if audio_data.dtype != np.float32:
+                audio_data = audio_data.astype(np.float32)
+            
+            # Normalize audio
+            if np.max(np.abs(audio_data)) > 0:
+                audio_data = audio_data / np.max(np.abs(audio_data))
+            
+            # Use a simpler approach with the processor
+            inputs = self.processor(
+                audio_data, 
+                sampling_rate=sample_rate, 
+                return_tensors="pt",
+                padding=True
+            )
+            
+            # Generate transcription with adjusted parameters
+            import torch
+            with torch.no_grad():
+                predicted_ids = self.model.generate(
+                    inputs.input_features,
+                    language="english",
+                    task="transcribe",
+                    max_length=448,
+                    num_beams=1,
+                    temperature=0.0,
+                    no_repeat_ngram_size=2
+                )
+            
+            # Decode transcription
+            transcription = self.processor.batch_decode(
+                predicted_ids, 
+                skip_special_tokens=True
+            )[0].strip()
+            
+            if not transcription:
+                return "No speech detected. Please ensure clear audio recording."
+            
+            logger.info(f"✅ Alternative transcription successful: {len(transcription)} characters")
+            return transcription
+            
+        except Exception as e:
+            logger.error(f"Alternative transcription also failed: {e}")
             raise Exception(f"Audio processing failed: {e}")
 
 
