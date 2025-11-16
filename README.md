@@ -45,7 +45,7 @@
 - 💾 Maintains secure patient records and analysis history
 
 ## 🔧 System Architecture
-
+.
 ```mermaid
 graph TB
     A[Audio Input] --> B[Data Processing Pipeline]
