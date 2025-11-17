@@ -146,6 +146,8 @@ class MedicalBERTTrainer:
 ```
 
 # Training Data Preparation
+Download model to load in your device: https://drive.google.com/drive/u/0/folders/1Twav_bY7kmtjFZTTV2eNZopJ9CCFZ5cg
+
 
 # Dataset Structure
 
